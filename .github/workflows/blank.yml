@@ -1,0 +1,33 @@
+#name: Build Krushna AI APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unzip Android project
+        run: unzip -o krushna-ai-android-compose-project.zip -d app-project
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build APK
+        working-directory: app-project
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Krushna-AI-APK
+          path: app-project/**/build/outputs/apk/debug/*.apk This is a basic workflow to help you get started with Acti
