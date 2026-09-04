@@ -1,0 +1,39 @@
+name: Build Krushna AI APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find ZIP
+        run: |
+          find . -maxdepth 2 -type f -name "*.zip"
+
+      - name: Unzip project
+        run: |
+          mkdir app-project
+          unzip -o *.zip -d app-project
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build APK
+        run: |
+          chmod +x app-project/gradlew
+          cd app-project
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Krushna-AI-APK
+          path: app-project/**/build/outputs/apk/debug/*.apk
