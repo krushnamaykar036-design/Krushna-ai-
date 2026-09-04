@@ -1,4 +1,3 @@
-
 name: Build Krushna AI APK
 
 on:
@@ -9,18 +8,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Find project ZIP
-        run: find . -type f -name "*.zip"
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Extract project
         run: |
           mkdir project
-          unzip -o ./*.zip -d project
-
-      - name: Find Gradle project
-        run: find project -name gradlew -type f
+          unzip -o krushna-ai-android-compose-project.zip -d project
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -30,10 +24,8 @@ jobs:
 
       - name: Build APK
         run: |
-          GRADLEW=$(find project -name gradlew -type f | head -1)
-          chmod +x "$GRADLEW"
-          DIR=$(dirname "$GRADLEW")
-          cd "$DIR"
+          chmod +x project/gradlew
+          cd project
           ./gradlew assembleDebug
 
       - name: Upload APK
