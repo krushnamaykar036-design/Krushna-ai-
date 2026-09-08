@@ -26,10 +26,12 @@ jobs:
           gradle-version: "8.9"
 
       - name: Build APK
-        run: gradle assembleDebug
+        run: |
+          cd AI_Assistant_Basic
+          gradle assembleDebug
 
       - name: Save APK
         uses: actions/upload-artifact@v4
         with:
           name: Krishna-AI-Assistant-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: AI_Assistant_Basic/app/build/outputs/apk/debug/app-debug.apk
