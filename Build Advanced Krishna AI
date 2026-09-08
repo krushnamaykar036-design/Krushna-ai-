@@ -1,0 +1,493 @@
+name: Build Advanced Krishna AI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Extract Basic Project
+        run: |
+          unzip -q AI_Assistant_Basic.zip -d project
+
+      - name: Find Project
+        run: |
+          SETTINGS=$(find project -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) | head -1)
+
+          if [ -z "$SETTINGS" ]; then
+            echo "ERROR: Gradle project not found"
+            find project -maxdepth 5 -type f
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$SETTINGS")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Project: $PROJECT_DIR"
+
+      - name: Upgrade Android Files
+        shell: bash
+        run: |
+          APP="$PROJECT_DIR/app"
+
+          mkdir -p "$APP/src/main/java/com/example/aiassistant"
+          mkdir -p "$APP/src/main/res/layout"
+          mkdir -p "$APP/src/main/res/xml"
+          mkdir -p "$APP/src/main/res/values"
+
+          cat > "$APP/src/main/AndroidManifest.xml" <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="android.permission.READ_CONTACTS"/>
+              <uses-permission android:name="android.permission.WRITE_CONTACTS"/>
+              <uses-permission android:name="android.permission.CALL_PHONE"/>
+              <uses-permission android:name="android.permission.SEND_SMS"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+
+              <application
+                  android:allowBackup="true"
+                  android:label="Krishna AI"
+                  android:supportsRtl="true"
+                  android:theme="@style/AppTheme">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+
+                  <service
+                      android:name=".VoiceService"
+                      android:exported="false"
+                      android:foregroundServiceType="microphone"/>
+
+                  <receiver
+                      android:name=".MyDeviceAdminReceiver"
+                      android:permission="android.permission.BIND_DEVICE_ADMIN"
+                      android:exported="true">
+                      <meta-data
+                          android:name="android.app.device_admin"
+                          android:resource="@xml/device_admin"/>
+                      <intent-filter>
+                          <action android:name="android.app.action.DEVICE_ADMIN_ENABLED"/>
+                      </intent-filter>
+                  </receiver>
+
+              </application>
+          </manifest>
+          EOF
+
+          cat > "$APP/src/main/res/xml/device_admin.xml" <<'EOF'
+          <device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-policies>
+                  <force-lock />
+              </uses-policies>
+          </device-admin>
+          EOF
+
+          cat > "$APP/src/main/res/values/styles.xml" <<'EOF'
+          <resources>
+              <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:windowLightStatusBar">false</item>
+                  <item name="android:statusBarColor">#101018</item>
+                  <item name="android:navigationBarColor">#101018</item>
+              </style>
+          </resources>
+          EOF
+
+          cat > "$APP/src/main/res/layout/activity_main.xml" <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:padding="20dp"
+              android:gravity="center_horizontal"
+              android:background="#101018">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="🪷 KRISHNA AI"
+                  android:textSize="28sp"
+                  android:textStyle="bold"
+                  android:textColor="#FFFFFF"
+                  android:layout_marginTop="30dp"/>
+
+              <TextView
+                  android:id="@+id/status"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="Ready"
+                  android:textSize="16sp"
+                  android:textColor="#CCCCCC"
+                  android:layout_marginTop="8dp"/>
+
+              <Button
+                  android:id="@+id/voiceButton"
+                  android:layout_width="180dp"
+                  android:layout_height="180dp"
+                  android:text="🎙️\nKRISHNA"
+                  android:textSize="22sp"
+                  android:layout_marginTop="35dp"/>
+
+              <EditText
+                  android:id="@+id/input"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:hint="Command type करा..."
+                  android:textColor="#FFFFFF"
+                  android:textColorHint="#AAAAAA"
+                  android:singleLine="true"
+                  android:layout_marginTop="25dp"/>
+
+              <Button
+                  android:id="@+id/send"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="Send"
+                  android:layout_marginTop="10dp"/>
+
+              <Button
+                  android:id="@+id/lockSetup"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="🔒 Lock Setup"
+                  android:layout_marginTop="8dp"/>
+
+              <Button
+                  android:id="@+id/clear"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="Clear Chat"
+                  android:layout_marginTop="8dp"/>
+
+              <TextView
+                  android:id="@+id/chat"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="1"
+                  android:textColor="#FFFFFF"
+                  android:textSize="16sp"
+                  android:paddingTop="15dp"/>
+
+          </LinearLayout>
+          EOF
+
+          cat > "$APP/src/main/java/com/example/aiassistant/MyDeviceAdminReceiver.java" <<'EOF'
+          package com.example.aiassistant;
+
+          import android.app.admin.DeviceAdminReceiver;
+
+          public class MyDeviceAdminReceiver extends DeviceAdminReceiver {
+          }
+          EOF
+
+          cat > "$APP/src/main/java/com/example/aiassistant/MainActivity.java" <<'EOF'
+          package com.example.aiassistant;
+
+          import android.Manifest;
+          import android.app.Activity;
+          import android.app.admin.DevicePolicyManager;
+          import android.content.ComponentName;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.pm.PackageManager;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import android.provider.ContactsContract;
+          import android.provider.Settings;
+          import android.speech.RecognizerIntent;
+          import android.speech.tts.TextToSpeech;
+          import android.view.View;
+          import android.widget.Button;
+          import android.widget.EditText;
+          import android.widget.TextView;
+
+          import java.util.ArrayList;
+          import java.util.Locale;
+
+          public class MainActivity extends Activity {
+
+              EditText input;
+              TextView chat, status;
+              TextToSpeech tts;
+
+              static final int ADMIN_REQUEST = 1001;
+
+              @Override
+              protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  setContentView(R.layout.activity_main);
+
+                  input = findViewById(R.id.input);
+                  chat = findViewById(R.id.chat);
+                  status = findViewById(R.id.status);
+
+                  tts = new TextToSpeech(this, x -> {
+                      if (x == TextToSpeech.SUCCESS)
+                          tts.setLanguage(new Locale("mr", "IN"));
+                  });
+
+                  findViewById(R.id.send).setOnClickListener(v ->
+                          handle(input.getText().toString()));
+
+                  findViewById(R.id.voiceButton).setOnClickListener(v ->
+                          startVoice());
+
+                  findViewById(R.id.clear).setOnClickListener(v ->
+                          chat.setText(""));
+
+                  findViewById(R.id.lockSetup).setOnClickListener(v ->
+                          setupLock());
+
+                  requestPermissions(new String[]{
+                          Manifest.permission.RECORD_AUDIO,
+                          Manifest.permission.READ_CONTACTS,
+                          Manifest.permission.WRITE_CONTACTS,
+                          Manifest.permission.CAMERA
+                  }, 10);
+              }
+
+              void startVoice() {
+                  Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                  i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                          RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                  i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,
+                          "mr-IN");
+                  i.putExtra(RecognizerIntent.EXTRA_PROMPT,
+                          "Krishna AI ला command द्या");
+
+                  try {
+                      startActivityForResult(i, 200);
+                  } catch (Exception e) {
+                      speak("Voice उपलब्ध नाही");
+                  }
+              }
+
+              @Override
+              protected void onActivityResult(int request, int result, Intent data) {
+                  super.onActivityResult(request, result, data);
+
+                  if (request == 200 && result == RESULT_OK && data != null) {
+                      ArrayList<String> r =
+                              data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+
+                      if (r != null && !r.isEmpty())
+                          handle(r.get(0));
+                  }
+              }
+
+              void handle(String raw) {
+                  if (raw == null) return;
+
+                  String s = raw.toLowerCase(Locale.ROOT).trim();
+
+                  chat.append("\nYou: " + raw);
+
+                  if (s.contains("time") || s.contains("वेळ") || s.contains("वाजले")) {
+                      String time = new java.text.SimpleDateFormat(
+                              "hh:mm a", Locale.getDefault()).format(new java.util.Date());
+                      reply("आत्ता वेळ " + time + " आहे.");
+                      return;
+                  }
+
+                  if (s.contains("youtube")) {
+                      openUrl("https://www.youtube.com");
+                      reply("YouTube उघडतो.");
+                      return;
+                  }
+
+                  if (s.contains("instagram")) {
+                      openUrl("https://www.instagram.com");
+                      reply("Instagram उघडतो.");
+                      return;
+                  }
+
+                  if (s.contains("google")) {
+                      openUrl("https://www.google.com");
+                      reply("Google उघडतो.");
+                      return;
+                  }
+
+                  if (s.contains("camera") || s.contains("कॅमेरा")) {
+                      Intent i = new Intent("android.media.action.IMAGE_CAPTURE");
+                      startActivity(i);
+                      reply("Camera उघडला.");
+                      return;
+                  }
+
+                  if (s.contains("lock") || s.contains("लॉक")) {
+                      lockPhone();
+                      return;
+                  }
+
+                  if (s.startsWith("whatsapp") || s.contains("whatsapp")) {
+                      openUrl("https://www.whatsapp.com");
+                      reply("WhatsApp उघडतो.");
+                      return;
+                  }
+
+                  if (s.contains("clear") || s.contains("क्लिअर")) {
+                      chat.setText("");
+                      return;
+                  }
+
+                  if (s.contains("contact") || s.contains("कॉन्टॅक्ट")) {
+                      Intent i = new Intent(Intent.ACTION_VIEW,
+                              ContactsContract.Contacts.CONTENT_URI);
+                      startActivity(i);
+                      return;
+                  }
+
+                  // Unknown command = deliberately silent.
+              }
+
+              void openUrl(String url) {
+                  try {
+                      startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                  } catch (Exception ignored) {}
+              }
+
+              void reply(String text) {
+                  chat.append("\nKrishna: " + text + "\n");
+                  speak(text);
+              }
+
+              void speak(String text) {
+                  if (tts != null)
+                      tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "krishna");
+              }
+
+              void setupLock() {
+                  DevicePolicyManager dpm =
+                          (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
+
+                  ComponentName admin =
+                          new ComponentName(this, MyDeviceAdminReceiver.class);
+
+                  if (!dpm.isAdminActive(admin)) {
+                      Intent i = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                      i.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin);
+                      i.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                              "Krishna AI ला phone lock command साठी permission.");
+                      startActivityForResult(i, ADMIN_REQUEST);
+                  }
+              }
+
+              void lockPhone() {
+                  DevicePolicyManager dpm =
+                          (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
+
+                  ComponentName admin =
+                          new ComponentName(this, MyDeviceAdminReceiver.class);
+
+                  if (dpm.isAdminActive(admin)) {
+                      dpm.lockNow();
+                  } else {
+                      setupLock();
+                  }
+              }
+
+              @Override
+              protected void onDestroy() {
+                  if (tts != null) tts.shutdown();
+                  super.onDestroy();
+              }
+          }
+          EOF
+
+          cat > "$APP/src/main/java/com/example/aiassistant/VoiceService.java" <<'EOF'
+          package com.example.aiassistant;
+
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.Service;
+          import android.content.Intent;
+          import android.os.Build;
+          import android.os.IBinder;
+
+          public class VoiceService extends Service {
+
+              static final String CHANNEL = "krishna_voice";
+
+              @Override
+              public void onCreate() {
+                  super.onCreate();
+
+                  if (Build.VERSION.SDK_INT >= 26) {
+                      NotificationChannel c = new NotificationChannel(
+                              CHANNEL,
+                              "Krishna AI Voice",
+                              NotificationManager.IMPORTANCE_LOW);
+
+                      NotificationManager nm =
+                              getSystemService(NotificationManager.class);
+                      nm.createNotificationChannel(c);
+                  }
+
+                  Notification n = new Notification.Builder(this,
+                          Build.VERSION.SDK_INT >= 26 ? CHANNEL : null)
+                          .setContentTitle("Krishna AI")
+                          .setContentText("Voice mode active")
+                          .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                          .build();
+
+                  startForeground(55, n);
+              }
+
+              @Override
+              public int onStartCommand(Intent intent, int flags, int id) {
+                  return START_STICKY;
+              }
+
+              @Override
+              public IBinder onBind(Intent intent) {
+                  return null;
+              }
+          }
+          EOF
+
+      - name: Fix Gradle XML
+        run: |
+          find "$PROJECT_DIR" -name "*.xml" -type f \
+            -exec sed -i 's/android:hintTextColor/android:textColorHint/g' {} \;
+
+      - name: Build APK
+        run: |
+          gradle -p "$PROJECT_DIR" assembleDebug
+
+      - name: Upload Advanced APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Krishna-AI-Advanced-APK
+          path: "**/app/build/outputs/apk/debug/app-debug.apk"
