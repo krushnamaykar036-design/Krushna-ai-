@@ -35,4 +35,3 @@ jobs:
         with:
           name: Krishna-AI-Assistant-APK
           path: AI_Assistant_Basic/app/build/outputs/apk/debug/app-debug.apk
-path: AI_Assistant_Basic/app/build/outputs/apk/debug/app-debug.apk
