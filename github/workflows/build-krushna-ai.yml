@@ -19,6 +19,7 @@ jobs:
         run: |
           PROJECT=$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) | head -1 | xargs dirname)
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
+          echo "Gradle project: $PROJECT"
 
       - name: Apply MainActivity
         run: |
@@ -38,7 +39,8 @@ jobs:
           MANIFEST="$PROJECT/app/src/main/AndroidManifest.xml"
 
           python3 - "$MANIFEST" <<'PY'
-          import sys, re
+          import sys
+          import re
           from pathlib import Path
 
           p = Path(sys.argv[1])
@@ -51,19 +53,33 @@ jobs:
                   1
               )
 
-          s = re.sub(
-              r'android:label="[^"]*"',
-              'android:label="Krushna AI"',
-              s,
-              count=1
-          )
+          if 'android:label=' in s:
+              s = re.sub(
+                  r'android:label="[^"]*"',
+                  'android:label="Krushna AI"',
+                  s,
+                  count=1
+              )
+          else:
+              s = s.replace(
+                  '<application',
+                  '<application android:label="Krushna AI"',
+                  1
+              )
 
-          s = re.sub(
-              r'android:icon="[^"]*"',
-              'android:icon="@drawable/krushna_ai_logo"',
-              s,
-              count=1
-          )
+          if 'android:icon=' in s:
+              s = re.sub(
+                  r'android:icon="[^"]*"',
+                  'android:icon="@drawable/krushna_ai_logo"',
+                  s,
+                  count=1
+              )
+          else:
+              s = s.replace(
+                  '<application',
+                  '<application android:icon="@drawable/krushna_ai_logo"',
+                  1
+              )
 
           if 'android:roundIcon=' in s:
               s = re.sub(
@@ -71,6 +87,12 @@ jobs:
                   'android:roundIcon="@drawable/krushna_ai_logo"',
                   s,
                   count=1
+              )
+          else:
+              s = s.replace(
+                  '<application',
+                  '<application android:roundIcon="@drawable/krushna_ai_logo"',
+                  1
               )
 
           p.write_text(s)
@@ -99,4 +121,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Krushna-AI-APK
-          path: extracted/**/app/build/outputs/apk/debug/app-debug.apkpath: extracted/**/app/build/outputs/apk/debug/app-debug.apk
+          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
