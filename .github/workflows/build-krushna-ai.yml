@@ -32,25 +32,11 @@ jobs:
         run: |
           sed -i 's/android:hintTextColor="[^"]*"//g' "$PROJECT/app/src/main/res/layout/activity_main.xml"
 
-      name: Add Internet Permission
+      - name: Add Internet Permission
         run: |
-        python3 - <<'PY'
-          import xml.etree.ElementTree as ET
-          manifest = "$PROJECT/app/src/main/AndroidManifest.xml"
-          tree = ET.parse(manifest)
-          root = tree.getroot()
-          ns = "{http://schemas.android.com/apk/res/android}"
-          perm = "android.permission.INTERNET"
-          existing = [
-              x.get(ns + "name")
-              for x in root.findall("uses-permission")
-          ]
-          if perm not in existing:
-              e = ET.Element("uses-permission")
-              e.set(ns + "name", perm)
-              root.insert(0, e)
-          tree.write(manifest, encoding="utf-8", xml_declaration=True)
-          PY
+          MANIFEST=$(find "$PROJECT" -name AndroidManifest.xml | head -1)
+          echo "Manifest: $MANIFEST"
+          grep -q 'android.permission.INTERNET' "$MANIFEST" || sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
 
       - name: Setup Java
         uses: actions/setup-java@v5
