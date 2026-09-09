@@ -8,85 +8,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Extract project ZIP
-        run: |
-          unzip -o AI_Assistant_Basic.zip -d extracted
+      - name: Extract
+        run: unzip -o AI_Assistant_Basic.zip -d extracted
 
-      - name: Find Gradle project
+      - name: Find Project
         run: |
-          PROJECT=$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) | head -1 | xargs dirname)
+          PROJECT=$(find extracted -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
-          echo "Gradle project: $PROJECT"    
-              - name: Find MainActivity
-        run: |
-          SOURCE=$(find . -type f -name MainActivity.java | head -1)
-          echo "SOURCE=$SOURCE" >> "$GITHUB_ENV"
-          echo "MainActivity found at: $SOURCE"
 
-      - name: Apply MainActivity
+      - name: Copy MainActivity
         run: |
           mkdir -p "$PROJECT/app/src/main/java/com/example/aiassistant"
-          cp "$SOURCE" \
-             "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java" 
-                   - name: Add Krushna AI logo
+          cp MainActivity.java "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java"
+
+      - name: Add Logo
         run: |
-          LOGO="file_0000000009b081fab0d7a8e0c41526ef.png"
-          test -f "$LOGO"
           mkdir -p "$PROJECT/app/src/main/res/drawable"
-          cp "$LOGO" "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
-
-      - name: Configure app
-        run: |
-          MANIFEST="$PROJECT/app/src/main/AndroidManifest.xml"
-
-          python3 - "$MANIFEST" <<'PY'
-          import sys
-          import re
-          from pathlib import Path
-
-          p = Path(sys.argv[1])
-          s = p.read_text()
-
-          if 'android.permission.INTERNET' not in s:
-              s = s.replace(
-                  '<application',
-                  '<uses-permission android:name="android.permission.INTERNET" />\n\n    <application',
-                  1
-              )
-
-          s = re.sub(
-              r'android:label="[^"]*"',
-              'android:label="Krushna AI"',
-              s,
-              count=1
-          )
-
-          s = re.sub(
-              r'android:icon="[^"]*"',
-              'android:icon="@drawable/krushna_ai_logo"',
-              s,
-              count=1
-          )
-
-          p.write_text(s)
-          PY
-              - name: Fix layout
-        run: |
-          sed -i 's/android:hintTextColor="[^"]*"//g' \
-            "$PROJECT/app/src/main/res/layout/activity_main.xml"
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-                - name: Fix layout
-        run: |
-          sed -i 's/android:hintTextColor="[^"]*"//g' \
-            "$PROJECT/app/src/main/res/layout/activity_main.xml"
+          cp file_0000000009b081fab0d7a8e0c41526ef.png "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -98,7 +38,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-                - name: Build APK
+
+      - name: Build APK
         run: |
           cd "$PROJECT"
           gradle assembleDebug
@@ -107,4 +48,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Krushna-AI-APK
-          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
+          path: extracted/**/app-debug.apk
