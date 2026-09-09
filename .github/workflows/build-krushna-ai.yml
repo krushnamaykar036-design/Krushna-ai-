@@ -48,8 +48,22 @@ jobs:
           cd "$PROJECT"
           gradle assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Krushna-AI-APK
-          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
+            - name: Add Internet Permission
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          manifest = "$PROJECT/app/src/main/AndroidManifest.xml"
+          tree = ET.parse(manifest)
+          root = tree.getroot()
+          ns = "{http://schemas.android.com/apk/res/android}"
+          perm = "android.permission.INTERNET"
+          existing = [
+              x.get(ns + "name")
+              for x in root.findall("uses-permission")
+          ]
+          if perm not in existing:
+              e = ET.Element("uses-permission")
+              e.set(ns + "name", perm)
+              root.insert(0, e)
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+          PY
