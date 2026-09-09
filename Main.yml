@@ -18,7 +18,7 @@ jobs:
       - name: Find Gradle project
         run: |
           PROJECT=$(find extracted -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
-          echo "PROJECT=$PROJECT" >> $GITHUB_ENV
+          echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
           echo "Gradle project: $PROJECT"
 
       - name: Apply MainActivity
@@ -27,22 +27,70 @@ jobs:
           cp AI_Assistant_Basic/app/src/main/java/com/example/aiassistant/MainActivity.java \
              "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java"
 
-      - name: Add Krushna AI logo
+      - name: Find and install logo
         run: |
-          LOGO=$(find . -maxdepth 2 -type f -iname "*.png" | head -1)
-          echo "Logo: $LOGO"
+          LOGO=$(find . -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" \) \
+            ! -path "./extracted/*" \
+            ! -path "./.git/*" | head -1)
+
+          echo "Selected logo: $LOGO"
+
+          if [ -z "$LOGO" ]; then
+            echo "ERROR: Logo image not found"
+            exit 1
+          fi
 
           mkdir -p "$PROJECT/app/src/main/res/drawable"
           cp "$LOGO" "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
 
-      - name: Set app name and logo
+      - name: Set Krushna AI name and logo
         run: |
           MANIFEST="$PROJECT/app/src/main/AndroidManifest.xml"
 
-          sed -i 's/android:label="[^"]*"/android:label="Krushna AI"/' "$MANIFEST"
+          python3 - "$MANIFEST" <<'PY'
+          import sys
+          from pathlib import Path
 
-          sed -i 's#android:icon="[^"]*"#android:icon="@drawable/krushna_ai_logo"#' "$MANIFEST"
+          p = Path(sys.argv[1])
+          s = p.read_text()
 
+          if 'android.permission.INTERNET' not in s:
+              s = s.replace(
+                  '<application',
+                  '<uses-permission android:name="android.permission.INTERNET" />\n\n    <application',
+                  1
+              )
+
+          if 'android:label=' in s:
+              import re
+              s = re.sub(r'android:label="[^"]*"', 'android:label="Krushna AI"', s, count=1)
+          else:
+              s = s.replace(
+                  '<application',
+                  '<application android:label="Krushna AI"',
+                  1
+              )
+
+          if 'android:icon=' in s:
+              import re
+              s = re.sub(
+                  r'android:icon="[^"]*"',
+                  'android:icon="@drawable/krushna_ai_logo"',
+                  s,
+                  count=1
+              )
+          else:
+              s = s.replace(
+                  '<application',
+                  '<application android:icon="@drawable/krushna_ai_logo"',
+                  1
+              )
+
+          p.write_text(s)
+          PY
+
+      - name: Fix layout
+        run: |
           sed -i 's/android:hintTextColor="[^"]*"//g' \
           "$PROJECT/app/src/main/res/layout/activity_main.xml"
 
