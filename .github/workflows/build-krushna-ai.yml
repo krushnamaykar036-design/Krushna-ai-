@@ -28,7 +28,12 @@ jobs:
           mkdir -p "$PROJECT/app/src/main/res/drawable"
           cp file_0000000009b081fab0d7a8e0c41526ef.png "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
 
+           - name: Fix layout
+        run: |
+          sed -i 's/android:hintTextColor="[^"]*"//g' "$PROJECT/app/src/main/res/layout/activity_main.xml"
+
       - name: Setup Java
+        uses: actions/setup-java@v5 - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
