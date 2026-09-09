@@ -1,4 +1,3 @@
-import android.widget.Toast;
 package com.example.aiassistant;
 
 import android.Manifest;
@@ -14,6 +13,7 @@ import android.text.InputType;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -51,13 +51,12 @@ public class MainActivity extends Activity {
         findViewById(R.id.send).setOnClickListener(v -> send());
         findViewById(R.id.mic).setOnClickListener(v -> voice());
 
-        // Mic वर long-press = Online AI settings
         findViewById(R.id.mic).setOnLongClickListener(v -> {
             showSettings();
             return true;
         });
 
-        settings = getSharedPreferences("krishna_ai", MODE_PRIVATE);
+        settings = getSharedPreferences("krushna_ai", MODE_PRIVATE);
 
         tts = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
@@ -78,7 +77,7 @@ public class MainActivity extends Activity {
         if (q.isEmpty()) return;
 
         chat.append("You: " + q + "\n");
-        chat.append("Krishna AI: विचार करतोय...\n\n");
+        chat.append("Krushna AI: विचार करतोय...\n\n");
 
         input.setText("");
 
@@ -100,7 +99,7 @@ public class MainActivity extends Activity {
             String finalAnswer = answer;
 
             runOnUiThread(() -> {
-                chat.append("Krishna AI: " + finalAnswer + "\n\n");
+                chat.append("Krushna AI: " + finalAnswer + "\n\n");
                 speak(finalAnswer);
             });
 
@@ -110,6 +109,7 @@ public class MainActivity extends Activity {
     String onlineReply(String question) throws Exception {
 
         String apiKey = settings.getString("api_key", "").trim();
+
         String model = settings.getString(
                 "model",
                 "gpt-4o-mini"
@@ -132,7 +132,6 @@ public class MainActivity extends Activity {
         connection.setRequestMethod("POST");
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(30000);
-
         connection.setDoOutput(true);
 
         connection.setRequestProperty(
@@ -152,13 +151,12 @@ public class MainActivity extends Activity {
         JSONArray messages = new JSONArray();
 
         JSONObject system = new JSONObject();
-        system.put(
-                "role",
-                "system"
-        );
+
+        system.put("role", "system");
+
         system.put(
                 "content",
-                "You are Krishna AI, a helpful assistant. " +
+                "You are Krushna AI, a helpful assistant. " +
                 "Reply in the same language as the user. " +
                 "Support Marathi, Hindi and English. " +
                 "Keep answers clear and useful."
@@ -167,6 +165,7 @@ public class MainActivity extends Activity {
         messages.put(system);
 
         JSONObject user = new JSONObject();
+
         user.put("role", "user");
         user.put("content", question);
 
@@ -177,22 +176,30 @@ public class MainActivity extends Activity {
         byte[] data =
                 body.toString().getBytes(StandardCharsets.UTF_8);
 
-        OutputStream output = connection.getOutputStream();
+        OutputStream output =
+                connection.getOutputStream();
+
         output.write(data);
         output.flush();
         output.close();
 
-        int responseCode = connection.getResponseCode();
+        int responseCode =
+                connection.getResponseCode();
 
         InputStream stream;
 
-        if (responseCode >= 200 && responseCode < 300) {
+        if (responseCode >= 200 &&
+                responseCode < 300) {
+
             stream = connection.getInputStream();
+
         } else {
+
             stream = connection.getErrorStream();
         }
 
         if (stream == null) {
+
             connection.disconnect();
             return null;
         }
@@ -202,7 +209,8 @@ public class MainActivity extends Activity {
                         new InputStreamReader(stream)
                 );
 
-        StringBuilder response = new StringBuilder();
+        StringBuilder response =
+                new StringBuilder();
 
         String line;
 
@@ -213,7 +221,9 @@ public class MainActivity extends Activity {
         reader.close();
         connection.disconnect();
 
-        if (responseCode < 200 || responseCode >= 300) {
+        if (responseCode < 200 ||
+                responseCode >= 300) {
+
             return null;
         }
 
@@ -233,7 +243,9 @@ public class MainActivity extends Activity {
         JSONObject message =
                 first.getJSONObject("message");
 
-        return message.getString("content").trim();
+        return message
+                .getString("content")
+                .trim();
     }
 
     String getOfflineReply(String text) {
@@ -246,42 +258,56 @@ public class MainActivity extends Activity {
 
         if (q.contains("नमस्कार") ||
                 q.contains("hello") ||
-                q.equals("hi"))
-            return "नमस्कार bro! मी Krishna AI आहे. 😊";
+                q.equals("hi")) {
+
+            return "नमस्कार bro! मी Krushna AI आहे. 😊";
+        }
 
         if (q.contains("तुझं नाव") ||
                 q.contains("तुझे नाव") ||
-                q.contains("your name"))
-            return "माझं नाव Krishna AI आहे. 🤖";
+                q.contains("your name")) {
+
+            return "माझं नाव Krushna AI आहे. 🤖";
+        }
 
         if (q.contains("कसा आहेस") ||
                 q.contains("कशी आहेस") ||
-                q.contains("how are you"))
+                q.contains("how are you")) {
+
             return "मी मस्त आहे bro! 😎";
+        }
 
         if (q.contains("अभ्यास") ||
-                q.contains("study"))
+                q.contains("study")) {
+
             return "रोज थोडा-थोडा अभ्यास कर आणि एका विषयावर लक्ष दे. 📚";
+        }
 
         if (q.contains("धन्यवाद") ||
-                q.contains("thanks"))
+                q.contains("thanks")) {
+
             return "Welcome bro! 😊";
+        }
 
         if (q.contains("वेळ") ||
-                q.contains("time"))
+                q.contains("time")) {
+
             return "आत्ता " +
                     new java.text.SimpleDateFormat(
                             "hh:mm a",
                             Locale.getDefault()
                     ).format(new Date());
+        }
 
         if (q.contains("तारीख") ||
-                q.contains("date"))
+                q.contains("date")) {
+
             return "आज " +
                     new java.text.SimpleDateFormat(
                             "dd-MM-yyyy",
                             Locale.getDefault()
                     ).format(new Date());
+        }
 
         return "Internet किंवा Online AI उपलब्ध नसल्यामुळे मी सध्या offline mode मध्ये आहे.";
     }
@@ -296,6 +322,7 @@ public class MainActivity extends Activity {
         );
 
         int padding = 30;
+
         layout.setPadding(
                 padding,
                 padding,
@@ -304,7 +331,9 @@ public class MainActivity extends Activity {
         );
 
         EditText url = new EditText(this);
+
         url.setHint("AI API URL");
+
         url.setText(
                 settings.getString(
                         "url",
@@ -313,7 +342,9 @@ public class MainActivity extends Activity {
         );
 
         EditText model = new EditText(this);
+
         model.setHint("Model");
+
         model.setText(
                 settings.getString(
                         "model",
@@ -322,11 +353,14 @@ public class MainActivity extends Activity {
         );
 
         EditText key = new EditText(this);
+
         key.setHint("API Key");
+
         key.setInputType(
                 InputType.TYPE_CLASS_TEXT |
                 InputType.TYPE_TEXT_VARIATION_PASSWORD
         );
+
         key.setText(
                 settings.getString(
                         "api_key",
@@ -339,38 +373,47 @@ public class MainActivity extends Activity {
         layout.addView(key);
 
         new AlertDialog.Builder(this)
-                .setTitle("Krishna AI Online Settings")
+
+                .setTitle("Krushna AI Online Settings")
+
                 .setMessage(
                         "API key फक्त फोनमध्ये सेट कर. GitHub वर share करू नको."
                 )
+
                 .setView(layout)
+
                 .setNegativeButton(
                         "Cancel",
                         null
                 )
+
                 .setPositiveButton(
                         "Save",
                         (dialog, which) -> {
 
                             settings.edit()
+
                                     .putString(
                                             "url",
                                             url.getText()
                                                     .toString()
                                                     .trim()
                                     )
+
                                     .putString(
                                             "model",
                                             model.getText()
                                                     .toString()
                                                     .trim()
                                     )
+
                                     .putString(
                                             "api_key",
                                             key.getText()
                                                     .toString()
                                                     .trim()
                                     )
+
                                     .apply();
 
                             Toast.makeText(
@@ -380,6 +423,7 @@ public class MainActivity extends Activity {
                             ).show();
                         }
                 )
+
                 .show();
     }
 
@@ -480,7 +524,7 @@ public class MainActivity extends Activity {
                     text,
                     TextToSpeech.QUEUE_FLUSH,
                     null,
-                    "krishna_ai"
+                    "krushna_ai"
             );
         }
     }
@@ -495,4 +539,13 @@ public class MainActivity extends Activity {
 
         super.onDestroy();
     }
-    }
+}
+
+आता क्रम:
+
+1. "MainActivity.java" मधला जुना code पूर्ण delete कर.
+2. वरचा पूर्ण code paste कर.
+3. Commit changes दाब.
+4. मग Actions → Build Krushna AI APK → Run workflow कर.
+
+⚠️ API key GitHub मध्ये किंवा इथे chat मध्ये paste करू नको.
