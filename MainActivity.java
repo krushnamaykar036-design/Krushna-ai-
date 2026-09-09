@@ -509,7 +509,4 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 }
-      - name: Add Internet Permission
-        run: |
-          MANIFEST="$PROJECT/app/src/main/AndroidManifest.xml"
-          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
+      
