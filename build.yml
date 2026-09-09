@@ -21,15 +21,12 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Extract ZIP
-        run: unzip -q AI_Assistant_Basic.zip -d project
-
-      - name: Build
-        working-directory: project
+      - name: Build APK
+        working-directory: AI_Assistant_Basic
         run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: AI-Assistant-APK
-          path: project/app/build/outputs/apk/debug/app-debug.apk
+          name: Krishna-AI-Assistant-APK
+          path: AI_Assistant_Basic/app/build/outputs/apk/debug/app-debug.apk
