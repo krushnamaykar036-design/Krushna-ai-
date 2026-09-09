@@ -21,11 +21,30 @@ jobs:
           echo "PROJECT=$PROJECT" >> $GITHUB_ENV
           echo "Gradle project: $PROJECT"
 
-      - name: Apply updated MainActivity
+      - name: Apply MainActivity
         run: |
           mkdir -p "$PROJECT/app/src/main/java/com/example/aiassistant"
           cp AI_Assistant_Basic/app/src/main/java/com/example/aiassistant/MainActivity.java \
              "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java"
+
+      - name: Add Krushna AI logo
+        run: |
+          LOGO=$(find . -maxdepth 2 -type f -iname "*.png" | head -1)
+          echo "Logo: $LOGO"
+
+          mkdir -p "$PROJECT/app/src/main/res/drawable"
+          cp "$LOGO" "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
+
+      - name: Set app name and logo
+        run: |
+          MANIFEST="$PROJECT/app/src/main/AndroidManifest.xml"
+
+          sed -i 's/android:label="[^"]*"/android:label="Krushna AI"/' "$MANIFEST"
+
+          sed -i 's#android:icon="[^"]*"#android:icon="@drawable/krushna_ai_logo"#' "$MANIFEST"
+
+          sed -i 's/android:hintTextColor="[^"]*"//g' \
+          "$PROJECT/app/src/main/res/layout/activity_main.xml"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -38,11 +57,6 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Fix layout
-        run: |
-          sed -i 's/android:hintTextColor="[^"]*"//g' \
-          "$PROJECT/app/src/main/res/layout/activity_main.xml"
-
       - name: Build APK
         run: |
           cd "$PROJECT"
@@ -51,5 +65,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Krishna-AI-Assistant-APK
+          name: Krushna-AI-APK
           path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
