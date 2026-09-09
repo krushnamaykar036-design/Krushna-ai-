@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Krushna AI APK
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ jobs:
 
       - name: Find Gradle project
         run: |
-          PROJECT=$(find extracted -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
+          PROJECT=$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) | head -1 | xargs dirname)
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
           echo "Gradle project: $PROJECT"
 
@@ -27,28 +27,19 @@ jobs:
           cp AI_Assistant_Basic/app/src/main/java/com/example/aiassistant/MainActivity.java \
              "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java"
 
-      - name: Find and install logo
+      - name: Add Krushna AI logo
         run: |
-          LOGO=$(find . -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" \) \
-            ! -path "./extracted/*" \
-            ! -path "./.git/*" | head -1)
-
-          echo "Selected logo: $LOGO"
-
-          if [ -z "$LOGO" ]; then
-            echo "ERROR: Logo image not found"
-            exit 1
-          fi
-
+          LOGO="file_0000000009b081fab0d7a8e0c41526ef.png"
+          test -f "$LOGO"
           mkdir -p "$PROJECT/app/src/main/res/drawable"
           cp "$LOGO" "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
 
-      - name: Set Krushna AI name and logo
+      - name: Configure app
         run: |
           MANIFEST="$PROJECT/app/src/main/AndroidManifest.xml"
 
           python3 - "$MANIFEST" <<'PY'
-          import sys
+          import sys, re
           from pathlib import Path
 
           p = Path(sys.argv[1])
@@ -62,8 +53,12 @@ jobs:
               )
 
           if 'android:label=' in s:
-              import re
-              s = re.sub(r'android:label="[^"]*"', 'android:label="Krushna AI"', s, count=1)
+              s = re.sub(
+                  r'android:label="[^"]*"',
+                  'android:label="Krushna AI"',
+                  s,
+                  count=1
+              )
           else:
               s = s.replace(
                   '<application',
@@ -72,7 +67,6 @@ jobs:
               )
 
           if 'android:icon=' in s:
-              import re
               s = re.sub(
                   r'android:icon="[^"]*"',
                   'android:icon="@drawable/krushna_ai_logo"',
@@ -86,13 +80,25 @@ jobs:
                   1
               )
 
+          if 'android:roundIcon=' in s:
+              s = re.sub(
+                  r'android:roundIcon="[^"]*"',
+                  'android:roundIcon="@drawable/krushna_ai_logo"',
+                  s,
+                  count=1
+              )
+          else:
+              s = s.replace(
+                  '<application',
+                  '<application android:roundIcon="@drawable/krushna_ai_logo"',
+                  1
+              )
+
           p.write_text(s)
           PY
 
-      - name: Fix layout
-        run: |
           sed -i 's/android:hintTextColor="[^"]*"//g' \
-          "$PROJECT/app/src/main/res/layout/activity_main.xml"
+            "$PROJECT/app/src/main/res/layout/activity_main.xml"
 
       - name: Setup Java
         uses: actions/setup-java@v5
