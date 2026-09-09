@@ -71,10 +71,11 @@ public class MainActivity extends Activity {
     }
 
     void send() {
-
         String q = input.getText().toString().trim();
 
-        if (q.isEmpty()) return;
+        if (q.isEmpty()) {
+            return;
+        }
 
         chat.append("You: " + q + "\n");
         chat.append("Krushna AI: विचार करतोय...\n\n");
@@ -82,7 +83,6 @@ public class MainActivity extends Activity {
         input.setText("");
 
         new Thread(() -> {
-
             String answer;
 
             try {
@@ -91,7 +91,6 @@ public class MainActivity extends Activity {
                 if (answer == null || answer.trim().isEmpty()) {
                     answer = getOfflineReply(q);
                 }
-
             } catch (Exception e) {
                 answer = getOfflineReply(q);
             }
@@ -102,12 +101,10 @@ public class MainActivity extends Activity {
                 chat.append("Krushna AI: " + finalAnswer + "\n\n");
                 speak(finalAnswer);
             });
-
         }).start();
     }
 
     String onlineReply(String question) throws Exception {
-
         String apiKey = settings.getString("api_key", "").trim();
 
         String model = settings.getString(
@@ -190,16 +187,12 @@ public class MainActivity extends Activity {
 
         if (responseCode >= 200 &&
                 responseCode < 300) {
-
             stream = connection.getInputStream();
-
         } else {
-
             stream = connection.getErrorStream();
         }
 
         if (stream == null) {
-
             connection.disconnect();
             return null;
         }
@@ -223,7 +216,6 @@ public class MainActivity extends Activity {
 
         if (responseCode < 200 ||
                 responseCode >= 300) {
-
             return null;
         }
 
@@ -249,49 +241,43 @@ public class MainActivity extends Activity {
     }
 
     String getOfflineReply(String text) {
-
         String q =
                 text.toLowerCase(Locale.ROOT).trim();
 
-        if (q.isEmpty())
+        if (q.isEmpty()) {
             return "काहीतरी बोल किंवा लिही.";
+        }
 
         if (q.contains("नमस्कार") ||
                 q.contains("hello") ||
                 q.equals("hi")) {
-
-            return "नमस्कार bro! मी Krushna AI आहे. 😊";
+            return "नमस्कार bro! मी Krushna AI आहे.";
         }
 
         if (q.contains("तुझं नाव") ||
                 q.contains("तुझे नाव") ||
                 q.contains("your name")) {
-
-            return "माझं नाव Krushna AI आहे. 🤖";
+            return "माझं नाव Krushna AI आहे.";
         }
 
         if (q.contains("कसा आहेस") ||
                 q.contains("कशी आहेस") ||
                 q.contains("how are you")) {
-
-            return "मी मस्त आहे bro! 😎";
+            return "मी मस्त आहे bro!";
         }
 
         if (q.contains("अभ्यास") ||
                 q.contains("study")) {
-
-            return "रोज थोडा-थोडा अभ्यास कर आणि एका विषयावर लक्ष दे. 📚";
+            return "रोज थोडा-थोडा अभ्यास कर आणि एका विषयावर लक्ष दे.";
         }
 
         if (q.contains("धन्यवाद") ||
                 q.contains("thanks")) {
-
-            return "Welcome bro! 😊";
+            return "Welcome bro!";
         }
 
         if (q.contains("वेळ") ||
                 q.contains("time")) {
-
             return "आत्ता " +
                     new java.text.SimpleDateFormat(
                             "hh:mm a",
@@ -301,7 +287,6 @@ public class MainActivity extends Activity {
 
         if (q.contains("तारीख") ||
                 q.contains("date")) {
-
             return "आज " +
                     new java.text.SimpleDateFormat(
                             "dd-MM-yyyy",
@@ -313,7 +298,6 @@ public class MainActivity extends Activity {
     }
 
     void showSettings() {
-
         LinearLayout layout =
                 new LinearLayout(this);
 
@@ -373,62 +357,51 @@ public class MainActivity extends Activity {
         layout.addView(key);
 
         new AlertDialog.Builder(this)
-
                 .setTitle("Krushna AI Online Settings")
-
                 .setMessage(
-                        "API key फक्त फोनमध्ये सेट कर. GitHub वर share करू नको."
+                        "API key फोनमध्येच ठेव. GitHub वर share करू नको."
                 )
-
                 .setView(layout)
-
                 .setNegativeButton(
                         "Cancel",
                         null
                 )
-
                 .setPositiveButton(
                         "Save",
                         (dialog, which) -> {
 
                             settings.edit()
-
                                     .putString(
                                             "url",
                                             url.getText()
                                                     .toString()
                                                     .trim()
                                     )
-
                                     .putString(
                                             "model",
                                             model.getText()
                                                     .toString()
                                                     .trim()
                                     )
-
                                     .putString(
                                             "api_key",
                                             key.getText()
                                                     .toString()
                                                     .trim()
                                     )
-
                                     .apply();
 
                             Toast.makeText(
                                     this,
-                                    "Settings saved ✅",
+                                    "Settings saved",
                                     Toast.LENGTH_SHORT
                             ).show();
                         }
                 )
-
                 .show();
     }
 
     void voice() {
-
         if (android.os.Build.VERSION.SDK_INT >= 23 &&
                 checkSelfPermission(
                         Manifest.permission.RECORD_AUDIO
@@ -448,7 +421,6 @@ public class MainActivity extends Activity {
     }
 
     void startVoice() {
-
         Intent i =
                 new Intent(
                         RecognizerIntent.ACTION_RECOGNIZE_SPEECH
@@ -517,9 +489,7 @@ public class MainActivity extends Activity {
     }
 
     void speak(String text) {
-
         if (tts != null) {
-
             tts.speak(
                     text,
                     TextToSpeech.QUEUE_FLUSH,
@@ -531,7 +501,6 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-
         if (tts != null) {
             tts.stop();
             tts.shutdown();
@@ -540,12 +509,3 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 }
-
-आता क्रम:
-
-1. "MainActivity.java" मधला जुना code पूर्ण delete कर.
-2. वरचा पूर्ण code paste कर.
-3. Commit changes दाब.
-4. मग Actions → Build Krushna AI APK → Run workflow कर.
-
-⚠️ API key GitHub मध्ये किंवा इथे chat मध्ये paste करू नको.
