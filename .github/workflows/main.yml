@@ -14,7 +14,6 @@ jobs:
       - name: Extract project ZIP
         run: |
           unzip -o AI_Assistant_Basic.zip -d extracted
-          find extracted -maxdepth 3 -type f | head -50
 
       - name: Setup Java
         uses: actions/setup-java@v5
