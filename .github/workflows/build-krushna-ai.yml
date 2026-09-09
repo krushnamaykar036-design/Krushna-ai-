@@ -32,9 +32,9 @@ jobs:
         run: |
           sed -i 's/android:hintTextColor="[^"]*"//g' "$PROJECT/app/src/main/res/layout/activity_main.xml"
 
-      - name: Add Internet Permission
+      name: Add Internet Permission
         run: |
-          python3 - <<'PY'
+        python3 - <<'PY'
           import xml.etree.ElementTree as ET
           manifest = "$PROJECT/app/src/main/AndroidManifest.xml"
           tree = ET.parse(manifest)
