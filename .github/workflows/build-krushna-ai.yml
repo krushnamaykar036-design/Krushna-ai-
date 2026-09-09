@@ -32,23 +32,7 @@ jobs:
         run: |
           sed -i 's/android:hintTextColor="[^"]*"//g' "$PROJECT/app/src/main/res/layout/activity_main.xml"
 
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.10.2'
-
-      - name: Build APK
-        run: |
-          cd "$PROJECT"
-          gradle assembleDebug
-
-            - name: Add Internet Permission
+      - name: Add Internet Permission
         run: |
           python3 - <<'PY'
           import xml.etree.ElementTree as ET
@@ -67,3 +51,25 @@ jobs:
               root.insert(0, e)
           tree.write(manifest, encoding="utf-8", xml_declaration=True)
           PY
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT"
+          gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Krushna-AI-APK
+          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
