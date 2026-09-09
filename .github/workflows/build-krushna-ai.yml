@@ -19,15 +19,19 @@ jobs:
         run: |
           PROJECT=$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) | head -1 | xargs dirname)
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
-          echo "Gradle project: $PROJECT"
+          echo "Gradle project: $PROJECT"    
+              - name: Find MainActivity
+        run: |
+          SOURCE=$(find . -type f -name MainActivity.java | head -1)
+          echo "SOURCE=$SOURCE" >> "$GITHUB_ENV"
+          echo "MainActivity found at: $SOURCE"
 
       - name: Apply MainActivity
         run: |
           mkdir -p "$PROJECT/app/src/main/java/com/example/aiassistant"
-          cp AI_Assistant_Basic/app/src/main/java/com/example/aiassistant/MainActivity.java \
-             "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java"
-
-      - name: Add Krushna AI logo
+          cp "$SOURCE" \
+             "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java" 
+                   - name: Add Krushna AI logo
         run: |
           LOGO="file_0000000009b081fab0d7a8e0c41526ef.png"
           test -f "$LOGO"
@@ -53,51 +57,34 @@ jobs:
                   1
               )
 
-          if 'android:label=' in s:
-              s = re.sub(
-                  r'android:label="[^"]*"',
-                  'android:label="Krushna AI"',
-                  s,
-                  count=1
-              )
-          else:
-              s = s.replace(
-                  '<application',
-                  '<application android:label="Krushna AI"',
-                  1
-              )
+          s = re.sub(
+              r'android:label="[^"]*"',
+              'android:label="Krushna AI"',
+              s,
+              count=1
+          )
 
-          if 'android:icon=' in s:
-              s = re.sub(
-                  r'android:icon="[^"]*"',
-                  'android:icon="@drawable/krushna_ai_logo"',
-                  s,
-                  count=1
-              )
-          else:
-              s = s.replace(
-                  '<application',
-                  '<application android:icon="@drawable/krushna_ai_logo"',
-                  1
-              )
-
-          if 'android:roundIcon=' in s:
-              s = re.sub(
-                  r'android:roundIcon="[^"]*"',
-                  'android:roundIcon="@drawable/krushna_ai_logo"',
-                  s,
-                  count=1
-              )
-          else:
-              s = s.replace(
-                  '<application',
-                  '<application android:roundIcon="@drawable/krushna_ai_logo"',
-                  1
-              )
+          s = re.sub(
+              r'android:icon="[^"]*"',
+              'android:icon="@drawable/krushna_ai_logo"',
+              s,
+              count=1
+          )
 
           p.write_text(s)
           PY
+              - name: Fix layout
+        run: |
+          sed -i 's/android:hintTextColor="[^"]*"//g' \
+            "$PROJECT/app/src/main/res/layout/activity_main.xml"
 
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+                - name: Fix layout
+        run: |
           sed -i 's/android:hintTextColor="[^"]*"//g' \
             "$PROJECT/app/src/main/res/layout/activity_main.xml"
 
@@ -111,8 +98,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-
-      - name: Build APK
+                - name: Build APK
         run: |
           cd "$PROJECT"
           gradle assembleDebug
