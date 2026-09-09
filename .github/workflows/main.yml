@@ -30,6 +30,9 @@ jobs:
         run: |
           PROJECT=$(find extracted -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
           echo "Project: $PROJECT"
+
+          sed -i 's/android:hintTextColor="[^"]*"//g' "$PROJECT/app/src/main/res/layout/activity_main.xml"
+
           cd "$PROJECT"
           gradle assembleDebug
 
