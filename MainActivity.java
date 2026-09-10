@@ -35,6 +35,7 @@ public class MainActivity extends Activity {
     static final int VOICE = 10;
     static final int MIC_PERMISSION = 20;
     static final int CALL_PERMISSION = 30;
+    static final int CONTACT_PERMISSION = 40;
 
     String pendingNumber = null;
 
@@ -60,8 +61,11 @@ public class MainActivity extends Activity {
     }
 
     void send() {
+
         String q = input.getText().toString().trim();
-        if (q.isEmpty()) return;
+
+        if (q.isEmpty())
+            return;
 
         if (handleCommand(q)) {
             input.setText("");
@@ -70,54 +74,83 @@ public class MainActivity extends Activity {
 
         chat.append("You: " + q + "\n");
         chat.append("Krushna AI: विचार करतोय...\n\n");
+
         input.setText("");
 
         new Thread(() -> {
+
             String answer;
 
             try {
+
                 answer = askServer(q);
-                if (answer == null || answer.isEmpty())
+
+                if (answer == null || answer.isEmpty()) {
                     answer = "Server कडून उत्तर मिळाले नाही.";
+                }
+
             } catch (Exception e) {
+
                 answer = "Internet/Server connection उपलब्ध नाही.";
             }
 
             String finalAnswer = answer;
 
             runOnUiThread(() -> {
-                chat.append("Krushna AI: " + finalAnswer + "\n\n");
+
+                chat.append(
+                        "Krushna AI: "
+                                + finalAnswer
+                                + "\n\n"
+                );
+
                 speak(finalAnswer);
             });
+
         }).start();
     }
 
     boolean handleCommand(String q) {
 
-        String text = q.toLowerCase(Locale.ROOT).trim();
+        String text =
+                q.toLowerCase(Locale.ROOT).trim();
 
         // SETTINGS
+
         if (text.contains("settings") ||
                 text.contains("setting") ||
                 text.contains("सेटिंग") ||
                 text.contains("सेटिंग्स")) {
 
-            startActivity(new Intent(Settings.ACTION_SETTINGS));
+            startActivity(
+                    new Intent(Settings.ACTION_SETTINGS)
+            );
+
             speak("Settings उघडत आहे");
+
             return true;
         }
 
         // CAMERA
+
         if (text.contains("camera") ||
                 text.contains("कॅमेरा")) {
 
-            Intent camera = new Intent(
-                    android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+            Intent camera =
+                    new Intent(
+                            android.provider.MediaStore
+                                    .ACTION_IMAGE_CAPTURE
+                    );
 
-            if (camera.resolveActivity(getPackageManager()) != null) {
+            if (camera.resolveActivity(
+                    getPackageManager()) != null) {
+
                 startActivity(camera);
+
                 speak("Camera उघडत आहे");
+
             } else {
+
                 speak("Camera सापडला नाही");
             }
 
@@ -125,30 +158,41 @@ public class MainActivity extends Activity {
         }
 
         // CALL
+
         if (text.contains("call") ||
                 text.contains("कॉल") ||
                 text.contains("फोन कर") ||
-                text.contains("फोन लाव")) {
+                text.contains("फोन लाव") ||
+                text.contains("फोन करा")) {
 
-            String name = extractContactName(text);
+            String name =
+                    extractContactName(text);
 
             if (!name.isEmpty()) {
+
                 findContactAndCall(name);
+
             } else {
-                speak("कोणाला call करायचा ते सांगा");
+
+                speak(
+                        "कोणाला call करायचा ते सांगा"
+                );
             }
 
             return true;
         }
 
         // OPEN APP
+
         if (text.contains("open") ||
                 text.contains("ओपन") ||
                 text.contains("उघड")) {
 
-            String appName = extractAppName(text);
+            String appName =
+                    extractAppName(text);
 
             if (!appName.isEmpty()) {
+
                 return openInstalledApp(appName);
             }
         }
@@ -161,16 +205,28 @@ public class MainActivity extends Activity {
         String result = text;
 
         String[] words = {
-                "please", "open", "app",
-                "ओपन", "उघड", "कर", "करा",
-                "अॅप", "ऍप"
+
+                "please",
+                "open",
+                "app",
+                "ओपन",
+                "उघड",
+                "कर",
+                "करा",
+                "अॅप",
+                "ऍप"
+
         };
 
         for (String word : words) {
-            result = result.replace(word, " ");
+
+            result =
+                    result.replace(word, " ");
         }
 
-        return result.replaceAll("\\s+", " ").trim();
+        return result
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     String extractContactName(String text) {
@@ -178,35 +234,63 @@ public class MainActivity extends Activity {
         String result = text;
 
         String[] words = {
-                "please", "call",
-                "कॉल", "फोन", "कर",
-                "लाव", "करा", "ला"
+
+                "please",
+                "call",
+                "कॉल",
+                "फोन",
+                "कर",
+                "करा",
+                "करायचा",
+                "करायची",
+                "लाव",
+                "लावा",
+                "ला",
+                "वर",
+                "अस"
+
         };
 
         for (String word : words) {
-            result = result.replace(word, " ");
+
+            result =
+                    result.replace(word, " ");
         }
 
-        return result.replaceAll("\\s+", " ").trim();
+        return result
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     boolean openInstalledApp(String requested) {
 
-        PackageManager pm = getPackageManager();
+        PackageManager pm =
+                getPackageManager();
 
-        Intent launcher = new Intent(
-                Intent.ACTION_MAIN, null);
+        Intent launcher =
+                new Intent(
+                        Intent.ACTION_MAIN,
+                        null
+                );
 
-        launcher.addCategory(Intent.CATEGORY_LAUNCHER);
+        launcher.addCategory(
+                Intent.CATEGORY_LAUNCHER
+        );
 
         List<android.content.pm.ResolveInfo> apps =
-                pm.queryIntentActivities(launcher, 0);
+                pm.queryIntentActivities(
+                        launcher,
+                        0
+                );
 
-        String wanted = normalize(requested);
+        String wanted =
+                normalize(requested);
 
-        for (android.content.pm.ResolveInfo info : apps) {
+        for (android.content.pm.ResolveInfo info :
+                apps) {
 
-            String label = info.loadLabel(pm).toString();
+            String label =
+                    info.loadLabel(pm).toString();
 
             String packageName =
                     info.activityInfo.packageName;
@@ -222,66 +306,142 @@ public class MainActivity extends Activity {
                     normalizedPackage.contains(wanted)) {
 
                 Intent launch =
-                        pm.getLaunchIntentForPackage(packageName);
+                        pm.getLaunchIntentForPackage(
+                                packageName
+                        );
 
                 if (launch != null) {
+
                     startActivity(launch);
-                    speak(label + " उघडत आहे");
+
+                    speak(
+                            label + " उघडत आहे"
+                    );
+
                     return true;
                 }
             }
         }
 
-        speak("हा App सापडला नाही: " + requested);
+        speak(
+                "हा App सापडला नाही: "
+                        + requested
+        );
+
         return true;
     }
 
     String normalize(String value) {
-        return value.toLowerCase(Locale.ROOT)
+
+        return value
+                .toLowerCase(Locale.ROOT)
                 .replace(" ", "")
                 .replace("-", "")
                 .replace("_", "")
                 .replace(".", "");
     }
 
+    // =========================
+    // CALLING SYSTEM
+    // =========================
+
     void findContactAndCall(String name) {
 
-        Cursor cursor = getContentResolver().query(
-                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                new String[]{
-                        ContactsContract.CommonDataKinds.Phone.NUMBER,
-                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
-                },
-                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
-                        + " LIKE ?",
-                new String[]{"%" + name + "%"},
-                null
-        );
+        if (checkSelfPermission(
+                Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
 
-        if (cursor == null) {
-            speak("Contacts मिळाले नाहीत");
+            requestPermissions(
+                    new String[]{
+                            Manifest.permission.READ_CONTACTS
+                    },
+                    CONTACT_PERMISSION
+            );
+
+            speak(
+                    "Contacts permission आवश्यक आहे"
+            );
+
             return;
         }
 
-        ArrayList<String> numbers = new ArrayList<>();
-        ArrayList<String> names = new ArrayList<>();
+        Cursor cursor =
+                getContentResolver().query(
+
+                        ContactsContract
+                                .CommonDataKinds.Phone
+                                .CONTENT_URI,
+
+                        new String[]{
+                                ContactsContract
+                                        .CommonDataKinds.Phone
+                                        .NUMBER,
+
+                                ContactsContract
+                                        .CommonDataKinds.Phone
+                                        .DISPLAY_NAME
+                        },
+
+                        null,
+                        null,
+                        ContactsContract
+                                .CommonDataKinds.Phone
+                                .DISPLAY_NAME
+                                + " ASC"
+                );
+
+        if (cursor == null) {
+
+            speak(
+                    "Contacts मिळाले नाहीत"
+            );
+
+            return;
+        }
+
+        String wanted =
+                normalizeContact(name);
+
+        String foundNumber = null;
+        String foundName = null;
 
         while (cursor.moveToNext()) {
 
-            String number = cursor.getString(0);
-            String contactName = cursor.getString(1);
+            String contactName =
+                    cursor.getString(1);
 
-            if (number != null && !number.isEmpty()) {
-                numbers.add(number);
-                names.add(contactName);
+            String number =
+                    cursor.getString(0);
+
+            if (contactName == null ||
+                    number == null ||
+                    number.isEmpty()) {
+
+                continue;
+            }
+
+            String normalizedContact =
+                    normalizeContact(contactName);
+
+            if (normalizedContact.contains(wanted) ||
+                    wanted.contains(normalizedContact)) {
+
+                foundName =
+                        contactName;
+
+                foundNumber =
+                        number;
+
+                break;
             }
         }
 
         cursor.close();
 
-        if (numbers.size() == 1) {
+        if (foundNumber != null) {
 
-            pendingNumber = numbers.get(0);
+            pendingNumber =
+                    foundNumber;
 
             if (checkSelfPermission(
                     Manifest.permission.CALL_PHONE)
@@ -291,58 +451,94 @@ public class MainActivity extends Activity {
                         new String[]{
                                 Manifest.permission.CALL_PHONE
                         },
-                        CALL_PERMISSION);
+                        CALL_PERMISSION
+                );
 
                 return;
             }
 
-            makeCall(pendingNumber);
+            makeCall(foundNumber);
+
             return;
         }
 
-        if (numbers.size() > 1) {
-            speak("या नावाचे एकापेक्षा जास्त contacts आहेत. कृपया Contacts मधून योग्य नंबर निवडा.");
-            return;
-        }
+        speak(
+                name
+                        + " contact सापडला नाही"
+        );
+    }
 
-        speak(name + " contact सापडला नाही");
+    String normalizeContact(String value) {
+
+        return value
+                .toLowerCase(Locale.ROOT)
+                .replaceAll(
+                        "[^a-z0-9\\u0900-\\u097F]",
+                        ""
+                );
     }
 
     void makeCall(String number) {
 
         try {
-            Intent call = new Intent(
-                    Intent.ACTION_CALL,
-                    Uri.parse("tel:" + number));
+
+            Intent call =
+                    new Intent(
+                            Intent.ACTION_CALL,
+                            Uri.parse("tel:" + number)
+                    );
 
             startActivity(call);
+
             speak("Call करत आहे");
 
         } catch (Exception e) {
-            speak("Call करता आला नाही");
+
+            speak(
+                    "Call करता आला नाही"
+            );
         }
     }
 
-    String askServer(String question) throws Exception {
+    // =========================
+    // AI SERVER
+    // =========================
 
-        URL url = new URL(SERVER_URL);
+    String askServer(String question)
+            throws Exception {
+
+        URL url =
+                new URL(SERVER_URL);
 
         HttpURLConnection connection =
-                (HttpURLConnection) url.openConnection();
+                (HttpURLConnection)
+                        url.openConnection();
 
         connection.setRequestMethod("POST");
+
         connection.setConnectTimeout(20000);
         connection.setReadTimeout(40000);
+
         connection.setDoOutput(true);
 
         connection.setRequestProperty(
-                "Content-Type", "application/json");
+                "Content-Type",
+                "application/json"
+        );
 
-        JSONObject body = new JSONObject();
-        body.put("message", question);
+        JSONObject body =
+                new JSONObject();
+
+        body.put(
+                "message",
+                question
+        );
 
         byte[] data =
-                body.toString().getBytes(StandardCharsets.UTF_8);
+                body.toString()
+                        .getBytes(
+                                StandardCharsets.UTF_8
+                        );
 
         OutputStream output =
                 connection.getOutputStream();
@@ -351,35 +547,56 @@ public class MainActivity extends Activity {
         output.flush();
         output.close();
 
-        int code = connection.getResponseCode();
+        int code =
+                connection.getResponseCode();
 
-        if (code < 200 || code >= 300) {
+        if (code < 200 ||
+                code >= 300) {
+
             connection.disconnect();
+
             return null;
         }
 
         BufferedReader reader =
                 new BufferedReader(
                         new InputStreamReader(
-                                connection.getInputStream()));
+                                connection
+                                        .getInputStream()
+                        )
+                );
 
         StringBuilder response =
                 new StringBuilder();
 
         String line;
 
-        while ((line = reader.readLine()) != null) {
+        while ((line =
+                reader.readLine()) != null) {
+
             response.append(line);
         }
 
         reader.close();
+
         connection.disconnect();
 
         JSONObject result =
-                new JSONObject(response.toString());
+                new JSONObject(
+                        response.toString()
+                );
 
-        return result.optString("reply", "").trim();
+        return result
+                .optString(
+                        "reply",
+                        ""
+                )
+                .trim();
     }
+
+    // =========================
+    // VOICE
+    // =========================
 
     void voice() {
 
@@ -392,7 +609,8 @@ public class MainActivity extends Activity {
                     new String[]{
                             Manifest.permission.RECORD_AUDIO
                     },
-                    MIC_PERMISSION);
+                    MIC_PERMISSION
+            );
 
             return;
         }
@@ -402,18 +620,29 @@ public class MainActivity extends Activity {
 
     void startVoice() {
 
-        Intent i = new Intent(
-                RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        Intent i =
+                new Intent(
+                        RecognizerIntent
+                                .ACTION_RECOGNIZE_SPEECH
+                );
 
         i.putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                RecognizerIntent
+                        .EXTRA_LANGUAGE_MODEL,
+
+                RecognizerIntent
+                        .LANGUAGE_MODEL_FREE_FORM
+        );
 
         i.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE,
-                "mr-IN");
+                "mr-IN"
+        );
 
-        startActivityForResult(i, VOICE);
+        startActivityForResult(
+                i,
+                VOICE
+        );
     }
 
     @Override
@@ -423,7 +652,10 @@ public class MainActivity extends Activity {
             Intent data) {
 
         super.onActivityResult(
-                requestCode, resultCode, data);
+                requestCode,
+                resultCode,
+                data
+        );
 
         if (requestCode == VOICE &&
                 resultCode == RESULT_OK &&
@@ -431,10 +663,17 @@ public class MainActivity extends Activity {
 
             ArrayList<String> results =
                     data.getStringArrayListExtra(
-                            RecognizerIntent.EXTRA_RESULTS);
+                            RecognizerIntent
+                                    .EXTRA_RESULTS
+                    );
 
-            if (results != null && !results.isEmpty()) {
-                input.setText(results.get(0));
+            if (results != null &&
+                    !results.isEmpty()) {
+
+                input.setText(
+                        results.get(0)
+                );
+
                 send();
             }
         }
@@ -447,36 +686,69 @@ public class MainActivity extends Activity {
             int[] grantResults) {
 
         super.onRequestPermissionsResult(
-                requestCode, permissions, grantResults);
+                requestCode,
+                permissions,
+                grantResults
+        );
+
+        // MIC
 
         if (requestCode == MIC_PERMISSION &&
                 grantResults.length > 0 &&
                 grantResults[0] ==
-                        PackageManager.PERMISSION_GRANTED) {
+                        PackageManager
+                                .PERMISSION_GRANTED) {
 
             startVoice();
         }
 
+        // CALL
+
         if (requestCode == CALL_PERMISSION &&
                 grantResults.length > 0 &&
                 grantResults[0] ==
-                        PackageManager.PERMISSION_GRANTED) {
+                        PackageManager
+                                .PERMISSION_GRANTED) {
 
             if (pendingNumber != null) {
-                makeCall(pendingNumber);
+
+                makeCall(
+                        pendingNumber
+                );
+
                 pendingNumber = null;
             }
         }
+
+        // CONTACTS
+
+        if (requestCode == CONTACT_PERMISSION &&
+                grantResults.length > 0 &&
+                grantResults[0] ==
+                        PackageManager
+                                .PERMISSION_GRANTED) {
+
+            speak(
+                    "Contacts permission मिळाली"
+            );
+        }
     }
+
+    // =========================
+    // TEXT TO SPEECH
+    // =========================
 
     void speak(String text) {
 
         if (tts != null) {
+
             tts.speak(
                     text,
-                    TextToSpeech.QUEUE_FLUSH,
+                    TextToSpeech
+                            .QUEUE_FLUSH,
                     null,
-                    "krushna_ai");
+                    "krushna_ai"
+            );
         }
     }
 
@@ -484,10 +756,11 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
 
         if (tts != null) {
+
             tts.stop();
             tts.shutdown();
         }
 
         super.onDestroy();
     }
-    }
+        }
