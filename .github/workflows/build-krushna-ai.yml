@@ -29,13 +29,6 @@ jobs:
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
           echo "Project found: $PROJECT"
 
-      - name: Find MainActivity
-        run: |
-          echo "Searching MainActivity..."
-          find "$PROJECT/app/src/main" -type f \
-            \( -name "MainActivity.java" -o -name "MainActivity.kt" \) \
-            -print
-
       - name: Replace MainActivity
         run: |
           mkdir -p "$PROJECT/app/src/main/java/com/example/aiassistant"
@@ -55,12 +48,10 @@ jobs:
           MANIFEST=$(find "$PROJECT" \
             -name AndroidManifest.xml | head -1)
 
-          echo "Manifest: $MANIFEST"
-
           grep -q 'android.permission.INTERNET' "$MANIFEST" || \
           sed -i '/<manifest/a\
-              <uses-permission android:name="android.permission.INTERNET" />' \
-              "$MANIFEST"
+          <uses-permission android:name="android.permission.INTERNET" />' \
+          "$MANIFEST"
 
       - name: Add Microphone Permission
         run: |
@@ -69,8 +60,8 @@ jobs:
 
           grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST" || \
           sed -i '/<manifest/a\
-              <uses-permission android:name="android.permission.RECORD_AUDIO" />' \
-              "$MANIFEST"
+          <uses-permission android:name="android.permission.RECORD_AUDIO" />' \
+          "$MANIFEST"
 
       - name: Fix Layout
         run: |
@@ -99,14 +90,11 @@ jobs:
       - name: Find APK
         run: |
           echo "APK files:"
-          find "$PROJECT" \
-            -type f \
-            -name "*.apk" \
-            -print
+          find "$PROJECT" -type f -name "*.apk" -print
 
       - name: Upload Krushna AI APK
         uses: actions/upload-artifact@v4
         with:
-          name: Krushna-AI-Advanced-APK
+          name: Krushna-AI-APK
           path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
