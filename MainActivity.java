@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
@@ -32,7 +31,6 @@ public class MainActivity extends Activity {
 
     final int VOICE = 10;
     final int MIC_PERMISSION = 20;
-    final int CALL_PERMISSION = 30;
 
     final String SERVER_URL =
             "https://krushna-ai-hseh.onrender.com/chat";
@@ -95,7 +93,7 @@ public class MainActivity extends Activity {
 
     boolean handleCommand(String q) {
 
-        String text = q.toLowerCase(Locale.ROOT);
+        String text = q.toLowerCase(Locale.ROOT).trim();
 
         // SETTINGS
         if (text.contains("settings") ||
@@ -118,11 +116,11 @@ public class MainActivity extends Activity {
                 text.contains("कॅमेरा")) {
 
             try {
-                Intent i = new Intent(
+                Intent camera = new Intent(
                         android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
 
-                if (i.resolveActivity(getPackageManager()) != null) {
-                    startActivity(i);
+                if (camera.resolveActivity(getPackageManager()) != null) {
+                    startActivity(camera);
                     speak("Camera उघडत आहे");
                 } else {
                     speak("Camera सापडला नाही");
@@ -135,32 +133,15 @@ public class MainActivity extends Activity {
             return true;
         }
 
-        // DIRECT CALL
-        if (text.contains("call") ||
-                text.contains("कॉल") ||
-                text.contains("फोन कर") ||
-                text.contains("फोन लाव")) {
-
-            speak("कॉलसाठी Contacts मधून नंबर निवडा");
-
-            Intent i = new Intent(
-                    Intent.ACTION_PICK,
-                    Uri.parse("content://contacts/phones"));
-
-            startActivityForResult(i, CALL_PERMISSION);
-
-            return true;
-        }
-
-        // ALL INSTALLED APPS
+        // OPEN ANY INSTALLED APP
         if (text.contains("open") ||
-                text.contains("उघड") ||
-                text.contains("ओपन")) {
+                text.contains("ओपन") ||
+                text.contains("उघड")) {
 
             String appName = extractAppName(text);
 
-            if (openInstalledApp(appName)) {
-                return true;
+            if (!appName.isEmpty()) {
+                return openInstalledApp(appName);
             }
         }
 
@@ -169,41 +150,52 @@ public class MainActivity extends Activity {
 
     String extractAppName(String text) {
 
-        String[] words = {
-                "open", "उघड", "ओपन", "कर", "करा",
-                "please", "app", "अॅप", "ऍप"
-        };
-
         String result = text;
 
-        for (String word : words) {
+        String[] commands = {
+                "please",
+                "open",
+                "app",
+                "ओपन",
+                "उघड",
+                "कर",
+                "करा",
+                "अॅप",
+                "ऍप"
+        };
+
+        for (String word : commands) {
             result = result.replace(word, " ");
         }
 
-        return result.trim();
+        return result.replaceAll("\\s+", " ").trim();
     }
 
     boolean openInstalledApp(String requested) {
 
-        if (requested.isEmpty()) return false;
-
         PackageManager pm = getPackageManager();
 
-        Intent launcherIntent =
-                new Intent(Intent.ACTION_MAIN, null);
+        Intent launcher = new Intent(
+                Intent.ACTION_MAIN,
+                null);
 
-        launcherIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        launcher.addCategory(Intent.CATEGORY_LAUNCHER);
 
         List<android.content.pm.ResolveInfo> apps =
-                pm.queryIntentActivities(launcherIntent, 0);
+                pm.queryIntentActivities(launcher, 0);
+
+        String wanted = normalize(requested);
 
         for (android.content.pm.ResolveInfo info : apps) {
 
             String label =
                     info.loadLabel(pm).toString();
 
-            if (label.toLowerCase(Locale.ROOT)
-                    .contains(requested)) {
+            String normalizedLabel =
+                    normalize(label);
+
+            if (normalizedLabel.contains(wanted) ||
+                    wanted.contains(normalizedLabel)) {
 
                 Intent launch =
                         pm.getLaunchIntentForPackage(
@@ -211,7 +203,9 @@ public class MainActivity extends Activity {
 
                 if (launch != null) {
 
+                    launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(launch);
+
                     speak(label + " उघडत आहे");
 
                     return true;
@@ -219,8 +213,18 @@ public class MainActivity extends Activity {
             }
         }
 
-        speak("हा App सापडला नाही");
+        speak("हा App सापडला नाही: " + requested);
         return true;
+    }
+
+    String normalize(String value) {
+
+        return value
+                .toLowerCase(Locale.ROOT)
+                .replace(" ", "")
+                .replace("-", "")
+                .replace("_", "")
+                .replace(".", "");
     }
 
     String askServer(String question) throws Exception {
@@ -344,37 +348,6 @@ public class MainActivity extends Activity {
                 send();
             }
         }
-
-        if (requestCode == CALL_PERMISSION &&
-                resultCode == RESULT_OK &&
-                data != null) {
-
-            Uri contactUri = data.getData();
-
-            if (contactUri != null) {
-
-                Intent callIntent =
-                        new Intent(
-                                Intent.ACTION_CALL,
-                                contactUri);
-
-                if (android.os.Build.VERSION.SDK_INT >= 23 &&
-                        checkSelfPermission(
-                                Manifest.permission.CALL_PHONE)
-                                != PackageManager.PERMISSION_GRANTED) {
-
-                    requestPermissions(
-                            new String[]{
-                                    Manifest.permission.CALL_PHONE
-                            },
-                            CALL_PERMISSION);
-
-                    return;
-                }
-
-                startActivity(callIntent);
-            }
-        }
     }
 
     @Override
@@ -418,4 +391,4 @@ public class MainActivity extends Activity {
 
         super.onDestroy();
     }
-}
+    }
