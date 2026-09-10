@@ -104,6 +104,14 @@ jobs:
           sed -i '/<manifest/a\
           <uses-permission android:name="android.permission.RECORD_AUDIO" />' \
           "$MANIFEST"
+                - name: Fix Layout
+        run: |
+          LAYOUT="$PROJECT/app/src/main/res/layout/activity_main.xml"
+
+          if [ -f "$LAYOUT" ]; then
+            sed -i 's/android:hintTextColor="[^"]*"//g' "$LAYOUT"
+            echo "Removed invalid hintTextColor attribute"
+          fi
 
       - name: Setup Java 17
         uses: actions/setup-java@v5
