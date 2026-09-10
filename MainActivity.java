@@ -832,6 +832,22 @@ public class MainActivity extends Activity {
                         PackageManager.PERMISSION_GRANTED) {
 
             if (pendingNumber != null) {
+                                pendingNumber = null;
+
+                confirmCallNow(number);
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+        }
+        super.onDestroy();
+    }
+}
 
                 String number = pendingNumber;
 
