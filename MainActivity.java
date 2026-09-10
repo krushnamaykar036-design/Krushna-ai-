@@ -2,7 +2,6 @@ package com.example.aiassistant;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -114,26 +113,18 @@ public class MainActivity extends Activity {
         String text =
                 q.toLowerCase(Locale.ROOT).trim();
 
-        // Confirmation answer
-        if (pendingNumber != null &&
-                (text.equals("हो") ||
-                 text.equals("होय") ||
-                 text.equals("yes") ||
-                 text.equals("ha") ||
-                 text.equals("haa"))) {
+        // Confirmation
+        if (pendingNumber != null) {
 
-            confirmCallNow();
-            return true;
-        }
+            if (isYes(text)) {
+                confirmCallNow();
+                return true;
+            }
 
-        if (pendingNumber != null &&
-                (text.equals("नाही") ||
-                 text.equals("नको") ||
-                 text.equals("no") ||
-                 text.equals("nahi"))) {
-
-            cancelCall();
-            return true;
+            if (isNo(text)) {
+                cancelCall();
+                return true;
+            }
         }
 
         if (text.contains("settings") ||
@@ -171,12 +162,7 @@ public class MainActivity extends Activity {
             return true;
         }
 
-        if (text.contains("call") ||
-                text.contains("कॉल") ||
-                text.contains("फोन कर") ||
-                text.contains("फोन लाव") ||
-                text.contains("फोन करा") ||
-                text.contains("कॉल कर")) {
+        if (isCallCommand(text)) {
 
             String name =
                     extractContactName(text);
@@ -205,6 +191,55 @@ public class MainActivity extends Activity {
         return false;
     }
 
+    boolean isCallCommand(String text) {
+
+        return text.contains("call") ||
+                text.contains("कॉल") ||
+                text.contains("फोन") ||
+                text.contains("फोन कर") ||
+                text.contains("फोन लाव") ||
+                text.contains("कॉल कर");
+    }
+
+    String extractContactName(String text) {
+
+        String result = text;
+
+        String[] removeWords = {
+
+                "please",
+                "call",
+                "फोन",
+                "कॉल",
+                "कर",
+                "करा",
+                "करायचा",
+                "करायचं",
+                "करायचे",
+                "करायचंय",
+                "लाव",
+                "लावा",
+                "ला",
+                "वर",
+                "म्हणजे",
+                "म्हणचे",
+                "म्हणून",
+                "कृपया",
+                "मला",
+                "नंबर",
+                "number"
+        };
+
+        for (String word : removeWords) {
+            result = result.replace(word, " ");
+        }
+
+        // उरलेले शब्द म्हणजे contact name
+        return result
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
     String extractAppName(String text) {
 
         String result = text;
@@ -219,38 +254,6 @@ public class MainActivity extends Activity {
                 "करा",
                 "अॅप",
                 "ऍप"
-        };
-
-        for (String word : words) {
-            result = result.replace(word, " ");
-        }
-
-        return result
-                .replaceAll("\\s+", " ")
-                .trim();
-    }
-
-    String extractContactName(String text) {
-
-        String result = text;
-
-        String[] words = {
-
-                "please",
-                "call",
-                "फोन",
-                "कॉल",
-                "कर",
-                "करा",
-                "करायचा",
-                "करायचं",
-                "लाव",
-                "ला",
-                "वर",
-                "म्हणजे",
-                "म्हणचे",
-                "म्हणून",
-                "कृपया"
         };
 
         for (String word : words) {
@@ -412,7 +415,16 @@ public class MainActivity extends Activity {
             String contact =
                     normalizeContact(contactName);
 
-            // फक्त पूर्ण नाव exact match
+            /*
+             * EXACT FULL NAME ONLY
+             *
+             * त्यामुळे:
+             * त्रेमेश माईकर
+             * आणि
+             * अभिषेक माईकर
+             *
+             * यामध्ये चुकीचा contact निवडला जाणार नाही.
+             */
             if (contact.equals(wanted)) {
 
                 foundName = contactName;
@@ -431,6 +443,12 @@ public class MainActivity extends Activity {
             askCallConfirmation(foundName);
             return;
         }
+
+        chat.append(
+                "Krushna AI: Contact सापडला नाही: " +
+                name +
+                "\n\n"
+        );
 
         speak(
                 name +
@@ -462,7 +480,6 @@ public class MainActivity extends Activity {
 
         speak(message);
 
-        // Voice confirmation ऐकणे
         new android.os.Handler().postDelayed(
                 () -> startConfirmationVoice(),
                 1800
@@ -499,6 +516,28 @@ public class MainActivity extends Activity {
                 i,
                 CONFIRM_VOICE
         );
+    }
+
+    boolean isYes(String text) {
+
+        return text.equals("हो") ||
+                text.equals("होय") ||
+                text.equals("हा") ||
+                text.equals("हो हो") ||
+                text.equals("yes") ||
+                text.equals("yes please") ||
+                text.equals("ha") ||
+                text.equals("haa");
+    }
+
+    boolean isNo(String text) {
+
+        return text.equals("नाही") ||
+                text.equals("नको") ||
+                text.equals("नकोय") ||
+                text.equals("no") ||
+                text.equals("nahi") ||
+                text.equals("nahin");
     }
 
     void confirmCallNow() {
@@ -725,7 +764,8 @@ public class MainActivity extends Activity {
             return;
         }
 
-        String spoken = results.get(0);
+        String spoken =
+                results.get(0);
 
         if (requestCode == VOICE) {
 
@@ -739,10 +779,7 @@ public class MainActivity extends Activity {
                     spoken.toLowerCase(Locale.ROOT)
                             .trim();
 
-            if (answer.contains("हो") ||
-                    answer.contains("होय") ||
-                    answer.contains("yes") ||
-                    answer.contains("हा")) {
+            if (isYes(answer)) {
 
                 confirmCallNow();
 
@@ -773,22 +810,6 @@ public class MainActivity extends Activity {
             startVoice();
         }
 
-        if (requestCode == CALL_PERMISSION &&
-                grantResults.length > 0 &&
-                grantResults[0] ==
-                        PackageManager.PERMISSION_GRANTED) {
-
-            if (pendingNumber != null) {
-
-                String number = pendingNumber;
-
-                pendingNumber = null;
-                pendingContactName = null;
-
-                makeCall(number);
-            }
-        }
-
         if (requestCode == CONTACT_PERMISSION &&
                 grantResults.length > 0 &&
                 grantResults[0] ==
@@ -802,38 +823,16 @@ public class MainActivity extends Activity {
                 pendingContactName = null;
 
                 findContactAndCall(name);
-
-            } else {
-
-                speak(
-                        "Contacts permission मिळाली"
-                );
             }
         }
-    }
 
-    void speak(String text) {
+        if (requestCode == CALL_PERMISSION &&
+                grantResults.length > 0 &&
+                grantResults[0] ==
+                        PackageManager.PERMISSION_GRANTED) {
 
-        if (tts != null) {
+            if (pendingNumber != null) {
 
-            tts.speak(
-                    text,
-                    TextToSpeech.QUEUE_FLUSH,
-                    null,
-                    "krushna_ai"
-            );
-        }
-    }
+                String number = pendingNumber;
 
-    @Override
-    protected void onDestroy() {
-
-        if (tts != null) {
-
-            tts.stop();
-            tts.shutdown();
-        }
-
-        super.onDestroy();
-    }
-    }
+                pendingN
