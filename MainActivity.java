@@ -4,12 +4,12 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.json.JSONObject;
@@ -21,6 +21,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -31,6 +32,7 @@ public class MainActivity extends Activity {
 
     final int VOICE = 10;
     final int MIC_PERMISSION = 20;
+    final int CALL_PERMISSION = 30;
 
     final String SERVER_URL =
             "https://krushna-ai-hseh.onrender.com/chat";
@@ -46,39 +48,14 @@ public class MainActivity extends Activity {
         findViewById(R.id.send).setOnClickListener(v -> send());
         findViewById(R.id.mic).setOnClickListener(v -> voice());
 
-        ImageView logo = new ImageView(this);
-        logo.setImageResource(R.drawable.krushna_ai_logo);
-        logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-
-        int size = (int)(90 * getResources()
-                .getDisplayMetrics().density);
-
-        android.widget.FrameLayout.LayoutParams lp =
-                new android.widget.FrameLayout.LayoutParams(size, size);
-
-        lp.gravity =
-                android.view.Gravity.TOP |
-                android.view.Gravity.CENTER_HORIZONTAL;
-
-        lp.topMargin = (int)(8 * getResources()
-                .getDisplayMetrics().density);
-
-        addContentView(logo, lp);
-
         tts = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
-                int r = tts.setLanguage(new Locale("mr", "IN"));
-
-                if (r == TextToSpeech.LANG_MISSING_DATA ||
-                        r == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    tts.setLanguage(Locale.ENGLISH);
-                }
+                tts.setLanguage(new Locale("mr", "IN"));
             }
         });
     }
 
     void send() {
-
         String q = input.getText().toString().trim();
 
         if (q.isEmpty()) return;
@@ -90,17 +67,15 @@ public class MainActivity extends Activity {
 
         chat.append("You: " + q + "\n");
         chat.append("Krushna AI: विचार करतोय...\n\n");
-
         input.setText("");
 
         new Thread(() -> {
-
             String answer;
 
             try {
                 answer = askServer(q);
 
-                if (answer == null || answer.trim().isEmpty()) {
+                if (answer == null || answer.isEmpty()) {
                     answer = "Server कडून उत्तर मिळाले नाही.";
                 }
 
@@ -111,9 +86,7 @@ public class MainActivity extends Activity {
             String finalAnswer = answer;
 
             runOnUiThread(() -> {
-                chat.append("Krushna AI: " +
-                        finalAnswer + "\n\n");
-
+                chat.append("Krushna AI: " + finalAnswer + "\n\n");
                 speak(finalAnswer);
             });
 
@@ -124,85 +97,130 @@ public class MainActivity extends Activity {
 
         String text = q.toLowerCase(Locale.ROOT);
 
-        try {
+        // SETTINGS
+        if (text.contains("settings") ||
+                text.contains("setting") ||
+                text.contains("सेटिंग") ||
+                text.contains("सेटिंग्स")) {
 
-            // CHROME
-            if (text.contains("chrome") ||
-                    text.contains("क्रोम")) {
-
-                Intent intent = getPackageManager()
-                        .getLaunchIntentForPackage(
-                                "com.android.chrome");
-
-                if (intent != null) {
-                    startActivity(intent);
-                    speak("Chrome उघडत आहे");
-                    return true;
-                }
-
-                speak("Chrome सापडले नाही");
-                return true;
-            }
-
-            // WHATSAPP
-            if (text.contains("whatsapp") ||
-                    text.contains("व्हाट्सएप") ||
-                    text.contains("व्हॉट्सअॅप")) {
-
-                Intent intent = getPackageManager()
-                        .getLaunchIntentForPackage(
-                                "com.whatsapp");
-
-                if (intent != null) {
-                    startActivity(intent);
-                    speak("WhatsApp उघडत आहे");
-                    return true;
-                }
-
-                speak("WhatsApp सापडले नाही");
-                return true;
-            }
-
-            // CAMERA
-            if (text.contains("camera") ||
-                    text.contains("कॅमेरा")) {
-
-                Intent intent = new Intent(
-                        android.provider.MediaStore
-                                .ACTION_IMAGE_CAPTURE);
-
-                if (intent.resolveActivity(
-                        getPackageManager()) != null) {
-
-                    startActivity(intent);
-                    speak("Camera उघडत आहे");
-                    return true;
-                }
-
-                speak("Camera उघडता आला नाही");
-                return true;
-            }
-
-            // SETTINGS
-            if (text.contains("settings") ||
-                    text.contains("setting") ||
-                    text.contains("सेटिंग") ||
-                    text.contains("सेटिंग्स")) {
-
-                startActivity(new Intent(
-                        Settings.ACTION_SETTINGS));
-
+            try {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
                 speak("Settings उघडत आहे");
-                return true;
+            } catch (Exception e) {
+                speak("Settings उघडता आले नाही");
             }
 
-        } catch (Exception e) {
-
-            speak("App उघडता आला नाही");
             return true;
         }
 
+        // CAMERA
+        if (text.contains("camera") ||
+                text.contains("कॅमेरा")) {
+
+            try {
+                Intent i = new Intent(
+                        android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+
+                if (i.resolveActivity(getPackageManager()) != null) {
+                    startActivity(i);
+                    speak("Camera उघडत आहे");
+                } else {
+                    speak("Camera सापडला नाही");
+                }
+
+            } catch (Exception e) {
+                speak("Camera उघडता आला नाही");
+            }
+
+            return true;
+        }
+
+        // DIRECT CALL
+        if (text.contains("call") ||
+                text.contains("कॉल") ||
+                text.contains("फोन कर") ||
+                text.contains("फोन लाव")) {
+
+            speak("कॉलसाठी Contacts मधून नंबर निवडा");
+
+            Intent i = new Intent(
+                    Intent.ACTION_PICK,
+                    Uri.parse("content://contacts/phones"));
+
+            startActivityForResult(i, CALL_PERMISSION);
+
+            return true;
+        }
+
+        // ALL INSTALLED APPS
+        if (text.contains("open") ||
+                text.contains("उघड") ||
+                text.contains("ओपन")) {
+
+            String appName = extractAppName(text);
+
+            if (openInstalledApp(appName)) {
+                return true;
+            }
+        }
+
         return false;
+    }
+
+    String extractAppName(String text) {
+
+        String[] words = {
+                "open", "उघड", "ओपन", "कर", "करा",
+                "please", "app", "अॅप", "ऍप"
+        };
+
+        String result = text;
+
+        for (String word : words) {
+            result = result.replace(word, " ");
+        }
+
+        return result.trim();
+    }
+
+    boolean openInstalledApp(String requested) {
+
+        if (requested.isEmpty()) return false;
+
+        PackageManager pm = getPackageManager();
+
+        Intent launcherIntent =
+                new Intent(Intent.ACTION_MAIN, null);
+
+        launcherIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+        List<android.content.pm.ResolveInfo> apps =
+                pm.queryIntentActivities(launcherIntent, 0);
+
+        for (android.content.pm.ResolveInfo info : apps) {
+
+            String label =
+                    info.loadLabel(pm).toString();
+
+            if (label.toLowerCase(Locale.ROOT)
+                    .contains(requested)) {
+
+                Intent launch =
+                        pm.getLaunchIntentForPackage(
+                                info.activityInfo.packageName);
+
+                if (launch != null) {
+
+                    startActivity(launch);
+                    speak(label + " उघडत आहे");
+
+                    return true;
+                }
+            }
+        }
+
+        speak("हा App सापडला नाही");
+        return true;
     }
 
     String askServer(String question) throws Exception {
@@ -224,8 +242,8 @@ public class MainActivity extends Activity {
         JSONObject body = new JSONObject();
         body.put("message", question);
 
-        byte[] data = body.toString()
-                .getBytes(StandardCharsets.UTF_8);
+        byte[] data =
+                body.toString().getBytes(StandardCharsets.UTF_8);
 
         OutputStream output =
                 connection.getOutputStream();
@@ -285,8 +303,9 @@ public class MainActivity extends Activity {
 
     void startVoice() {
 
-        Intent i = new Intent(
-                RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        Intent i =
+                new Intent(
+                        RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 
         i.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -297,26 +316,6 @@ public class MainActivity extends Activity {
                 "mr-IN");
 
         startActivityForResult(i, VOICE);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(
-            int requestCode,
-            String[] permissions,
-            int[] grantResults) {
-
-        super.onRequestPermissionsResult(
-                requestCode,
-                permissions,
-                grantResults);
-
-        if (requestCode == MIC_PERMISSION &&
-                grantResults.length > 0 &&
-                grantResults[0] ==
-                        PackageManager.PERMISSION_GRANTED) {
-
-            startVoice();
-        }
     }
 
     @Override
@@ -344,6 +343,57 @@ public class MainActivity extends Activity {
                 input.setText(results.get(0));
                 send();
             }
+        }
+
+        if (requestCode == CALL_PERMISSION &&
+                resultCode == RESULT_OK &&
+                data != null) {
+
+            Uri contactUri = data.getData();
+
+            if (contactUri != null) {
+
+                Intent callIntent =
+                        new Intent(
+                                Intent.ACTION_CALL,
+                                contactUri);
+
+                if (android.os.Build.VERSION.SDK_INT >= 23 &&
+                        checkSelfPermission(
+                                Manifest.permission.CALL_PHONE)
+                                != PackageManager.PERMISSION_GRANTED) {
+
+                    requestPermissions(
+                            new String[]{
+                                    Manifest.permission.CALL_PHONE
+                            },
+                            CALL_PERMISSION);
+
+                    return;
+                }
+
+                startActivity(callIntent);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults) {
+
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults);
+
+        if (requestCode == MIC_PERMISSION &&
+                grantResults.length > 0 &&
+                grantResults[0] ==
+                        PackageManager.PERMISSION_GRANTED) {
+
+            startVoice();
         }
     }
 
