@@ -29,73 +29,59 @@ jobs:
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
           echo "Project found: $PROJECT"
 
-      - name: Replace Actual MainActivity
+      - name: Replace MainActivity
         run: |
-          TARGET=$(find "$PROJECT" -type f \
-            -path "*/src/main/java/*" \
-            -name "MainActivity.java" | head -1)
+          mkdir -p "$PROJECT/app/src/main/java/com/example/aiassistant"
+          cp MainActivity.java \
+            "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java"
 
-          if [ -z "$TARGET" ]; then
-            echo "MainActivity.java not found!"
-            exit 1
-          fi
-
-          echo "Replacing: $TARGET"
-          cp MainActivity.java "$TARGET"
-
-          if ! grep -q "handleCommand" "$TARGET"; then
-            echo "New MainActivity was not copied!"
-            exit 1
-          fi
-
-      - name: Add Logo
+      - name: Add Permissions
         run: |
-          mkdir -p "$PROJECT/app/src/main/res/drawable"
-          cp file_0000000009b081fab0d7a8e0c41526ef.png \
-            "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
+          MANIFEST=$(find "$PROJECT" -name AndroidManifest.xml -print -quit)
 
-      - name: Setup Launcher Icon
+          sed -i '/<manifest/a\
+          <uses-permission android:name="android.permission.INTERNET" />\
+          <uses-permission android:name="android.permission.RECORD_AUDIO" />\
+          <uses-permission android:name="android.permission.READ_CONTACTS" />\
+          <uses-permission android:name="android.permission.CALL_PHONE" />\
+          <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />' "$MANIFEST"
+
+      - name: Add Krushna AI Logo
         run: |
           RES="$PROJECT/app/src/main/res"
 
+          mkdir -p "$RES/drawable"
           mkdir -p "$RES/mipmap-mdpi"
           mkdir -p "$RES/mipmap-hdpi"
           mkdir -p "$RES/mipmap-xhdpi"
           mkdir -p "$RES/mipmap-xxhdpi"
           mkdir -p "$RES/mipmap-xxxhdpi"
 
-          for DIR in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            cp file_0000000009b081fab0d7a8e0c41526ef.png \
-              "$RES/mipmap-$DIR/ic_launcher.png"
-          done
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/drawable/krushna_ai_logo.png"
 
-      - name: Fix Manifest
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-mdpi/ic_launcher.png"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-hdpi/ic_launcher.png"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-xhdpi/ic_launcher.png"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-xxhdpi/ic_launcher.png"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-xxxhdpi/ic_launcher.png"
+
+      - name: Set Launcher Icon
         run: |
-          MANIFEST=$(find "$PROJECT" \
-            -name AndroidManifest.xml -print -quit)
+          MANIFEST=$(find "$PROJECT" -name AndroidManifest.xml -print -quit)
 
-          if [ -z "$MANIFEST" ]; then
-            echo "AndroidManifest.xml not found!"
-            exit 1
-          fi
+          sed -i 's#android:icon="[^"]*"#android:icon="@mipmap/ic_launcher"#g' "$MANIFEST"
 
-          sed -i \
-            's#android:icon="[^"]*"#android:icon="@mipmap/ic_launcher"#g' \
-            "$MANIFEST"
-
-          sed -i \
-            's#android:roundIcon="[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' \
-            "$MANIFEST"
-
-          grep -q 'android.permission.INTERNET' "$MANIFEST" || \
-            sed -i '/<manifest/a\
-          <uses-permission android:name="android.permission.INTERNET" />' \
-            "$MANIFEST"
-
-          grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST" || \
-            sed -i '/<manifest/a\
-          <uses-permission android:name="android.permission.RECORD_AUDIO" />' \
-            "$MANIFEST"
+          sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' "$MANIFEST"
 
       - name: Fix Layout
         run: |
@@ -116,20 +102,16 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build APK
+      - name: Build Debug APK
         run: |
           cd "$PROJECT"
           gradle assembleDebug --stacktrace
 
-      - name: Verify Build
+      - name: Find APK
         run: |
-          echo "Checking MainActivity..."
-          grep -n "handleCommand" "$GITHUB_WORKSPACE"/MainActivity.java || true
-
-          echo "Checking APK..."
           find "$PROJECT" -type f -name "*.apk" -print
 
-      - name: Upload APK
+      - name: Upload Krushna AI APK
         uses: actions/upload-artifact@v4
         with:
           name: Krushna-AI-APK
