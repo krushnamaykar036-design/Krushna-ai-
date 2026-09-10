@@ -9,6 +9,7 @@ import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.json.JSONObject;
@@ -37,7 +38,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-
         setContentView(R.layout.activity_main);
 
         chat = findViewById(R.id.chat);
@@ -46,33 +46,43 @@ public class MainActivity extends Activity {
         findViewById(R.id.send).setOnClickListener(v -> send());
         findViewById(R.id.mic).setOnClickListener(v -> voice());
 
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.krushna_ai_logo);
+        logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+
+        int size = (int)(90 * getResources()
+                .getDisplayMetrics().density);
+
+        android.widget.FrameLayout.LayoutParams lp =
+                new android.widget.FrameLayout.LayoutParams(size, size);
+
+        lp.gravity =
+                android.view.Gravity.TOP |
+                android.view.Gravity.CENTER_HORIZONTAL;
+
+        lp.topMargin = (int)(8 * getResources()
+                .getDisplayMetrics().density);
+
+        addContentView(logo, lp);
+
         tts = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
-                int result = tts.setLanguage(
-                        new Locale("mr", "IN")
-                );
+                int r = tts.setLanguage(new Locale("mr", "IN"));
 
-                if (result == TextToSpeech.LANG_MISSING_DATA ||
-                        result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                if (r == TextToSpeech.LANG_MISSING_DATA ||
+                        r == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts.setLanguage(Locale.ENGLISH);
                 }
             }
         });
     }
 
-    // =========================
-    // SEND
-    // =========================
-
     void send() {
 
         String q = input.getText().toString().trim();
 
-        if (q.isEmpty()) {
-            return;
-        }
+        if (q.isEmpty()) return;
 
-        // First check app commands
         if (handleCommand(q)) {
             input.setText("");
             return;
@@ -88,40 +98,27 @@ public class MainActivity extends Activity {
             String answer;
 
             try {
-
                 answer = askServer(q);
 
-                if (answer == null ||
-                        answer.trim().isEmpty()) {
-
+                if (answer == null || answer.trim().isEmpty()) {
                     answer = "Server कडून उत्तर मिळाले नाही.";
                 }
 
             } catch (Exception e) {
-
-                answer =
-                        "Internet/Server connection उपलब्ध नाही.";
+                answer = "Internet/Server connection उपलब्ध नाही.";
             }
 
             String finalAnswer = answer;
 
             runOnUiThread(() -> {
-
-                chat.append(
-                        "Krushna AI: " +
-                        finalAnswer +
-                        "\n\n"
-                );
+                chat.append("Krushna AI: " +
+                        finalAnswer + "\n\n");
 
                 speak(finalAnswer);
             });
 
         }).start();
     }
-
-    // =========================
-    // APP COMMANDS
-    // =========================
 
     boolean handleCommand(String q) {
 
@@ -133,19 +130,18 @@ public class MainActivity extends Activity {
             if (text.contains("chrome") ||
                     text.contains("क्रोम")) {
 
-                Intent intent =
-                        getPackageManager()
-                                .getLaunchIntentForPackage(
-                                        "com.android.chrome"
-                                );
+                Intent intent = getPackageManager()
+                        .getLaunchIntentForPackage(
+                                "com.android.chrome");
 
                 if (intent != null) {
-
                     startActivity(intent);
                     speak("Chrome उघडत आहे");
-
                     return true;
                 }
+
+                speak("Chrome सापडले नाही");
+                return true;
             }
 
             // WHATSAPP
@@ -153,40 +149,38 @@ public class MainActivity extends Activity {
                     text.contains("व्हाट्सएप") ||
                     text.contains("व्हॉट्सअॅप")) {
 
-                Intent intent =
-                        getPackageManager()
-                                .getLaunchIntentForPackage(
-                                        "com.whatsapp"
-                                );
+                Intent intent = getPackageManager()
+                        .getLaunchIntentForPackage(
+                                "com.whatsapp");
 
                 if (intent != null) {
-
                     startActivity(intent);
                     speak("WhatsApp उघडत आहे");
-
                     return true;
                 }
+
+                speak("WhatsApp सापडले नाही");
+                return true;
             }
 
             // CAMERA
             if (text.contains("camera") ||
                     text.contains("कॅमेरा")) {
 
-                Intent intent =
-                        new Intent(
-                                android.provider.MediaStore
-                                        .ACTION_IMAGE_CAPTURE
-                        );
+                Intent intent = new Intent(
+                        android.provider.MediaStore
+                                .ACTION_IMAGE_CAPTURE);
 
                 if (intent.resolveActivity(
-                        getPackageManager()
-                ) != null) {
+                        getPackageManager()) != null) {
 
                     startActivity(intent);
                     speak("Camera उघडत आहे");
-
                     return true;
                 }
+
+                speak("Camera उघडता आला नाही");
+                return true;
             }
 
             // SETTINGS
@@ -195,63 +189,43 @@ public class MainActivity extends Activity {
                     text.contains("सेटिंग") ||
                     text.contains("सेटिंग्स")) {
 
-                Intent intent =
-                        new Intent(
-                                Settings.ACTION_SETTINGS
-                        );
+                startActivity(new Intent(
+                        Settings.ACTION_SETTINGS));
 
-                startActivity(intent);
                 speak("Settings उघडत आहे");
-
                 return true;
             }
 
         } catch (Exception e) {
 
             speak("App उघडता आला नाही");
-
             return true;
         }
 
         return false;
     }
 
-    // =========================
-    // SERVER
-    // =========================
+    String askServer(String question) throws Exception {
 
-    String askServer(String question)
-            throws Exception {
-
-        URL url =
-                new URL(SERVER_URL);
+        URL url = new URL(SERVER_URL);
 
         HttpURLConnection connection =
-                (HttpURLConnection)
-                        url.openConnection();
+                (HttpURLConnection) url.openConnection();
 
         connection.setRequestMethod("POST");
-
         connection.setConnectTimeout(20000);
         connection.setReadTimeout(40000);
-
         connection.setDoOutput(true);
 
         connection.setRequestProperty(
                 "Content-Type",
-                "application/json"
-        );
+                "application/json");
 
-        JSONObject body =
-                new JSONObject();
-
+        JSONObject body = new JSONObject();
         body.put("message", question);
 
-        byte[] data =
-                body.toString()
-                        .getBytes(
-                                StandardCharsets.UTF_8
-                        );
+        byte[] data = body.toString()
+                .getBytes(StandardCharsets.UTF_8);
 
         OutputStream output =
                 connection.getOutputStream();
@@ -260,66 +234,48 @@ public class MainActivity extends Activity {
         output.flush();
         output.close();
 
-        int responseCode =
-                connection.getResponseCode();
+        int code = connection.getResponseCode();
 
-        if (responseCode < 200 ||
-                responseCode >= 300) {
-
+        if (code < 200 || code >= 300) {
             connection.disconnect();
-
             return null;
         }
 
         BufferedReader reader =
                 new BufferedReader(
                         new InputStreamReader(
-                                connection.getInputStream()
-                        )
-                );
+                                connection.getInputStream()));
 
         StringBuilder response =
                 new StringBuilder();
 
         String line;
 
-        while ((line =
-                reader.readLine()) != null) {
-
+        while ((line = reader.readLine()) != null) {
             response.append(line);
         }
 
         reader.close();
-
         connection.disconnect();
 
         JSONObject result =
-                new JSONObject(
-                        response.toString()
-                );
+                new JSONObject(response.toString());
 
-        return result
-                .optString("reply", "")
-                .trim();
+        return result.optString("reply", "").trim();
     }
-
-    // =========================
-    // VOICE INPUT
-    // =========================
 
     void voice() {
 
         if (android.os.Build.VERSION.SDK_INT >= 23 &&
                 checkSelfPermission(
-                        Manifest.permission.RECORD_AUDIO
-                ) != PackageManager.PERMISSION_GRANTED) {
+                        Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
 
             requestPermissions(
                     new String[]{
                             Manifest.permission.RECORD_AUDIO
                     },
-                    MIC_PERMISSION
-            );
+                    MIC_PERMISSION);
 
             return;
         }
@@ -329,33 +285,19 @@ public class MainActivity extends Activity {
 
     void startVoice() {
 
-        Intent i =
-                new Intent(
-                        RecognizerIntent
-                                .ACTION_RECOGNIZE_SPEECH
-                );
+        Intent i = new Intent(
+                RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 
         i.putExtra(
-                RecognizerIntent
-                        .EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent
-                        .LANGUAGE_MODEL_FREE_FORM
-        );
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
 
         i.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE,
-                "mr-IN"
-        );
+                "mr-IN");
 
-        startActivityForResult(
-                i,
-                VOICE
-        );
+        startActivityForResult(i, VOICE);
     }
-
-    // =========================
-    // MICROPHONE PERMISSION
-    // =========================
 
     @Override
     public void onRequestPermissionsResult(
@@ -366,8 +308,7 @@ public class MainActivity extends Activity {
         super.onRequestPermissionsResult(
                 requestCode,
                 permissions,
-                grantResults
-        );
+                grantResults);
 
         if (requestCode == MIC_PERMISSION &&
                 grantResults.length > 0 &&
@@ -378,10 +319,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    // =========================
-    // VOICE RESULT
-    // =========================
-
     @Override
     protected void onActivityResult(
             int requestCode,
@@ -391,8 +328,7 @@ public class MainActivity extends Activity {
         super.onActivityResult(
                 requestCode,
                 resultCode,
-                data
-        );
+                data);
 
         if (requestCode == VOICE &&
                 resultCode == RESULT_OK &&
@@ -400,52 +336,36 @@ public class MainActivity extends Activity {
 
             ArrayList<String> results =
                     data.getStringArrayListExtra(
-                            RecognizerIntent.EXTRA_RESULTS
-                    );
+                            RecognizerIntent.EXTRA_RESULTS);
 
             if (results != null &&
                     !results.isEmpty()) {
 
-                String spokenText =
-                        results.get(0);
-
-                input.setText(spokenText);
-
+                input.setText(results.get(0));
                 send();
             }
         }
     }
 
-    // =========================
-    // VOICE REPLY
-    // =========================
-
     void speak(String text) {
 
         if (tts != null) {
-
             tts.speak(
                     text,
                     TextToSpeech.QUEUE_FLUSH,
                     null,
-                    "krushna_ai"
-            );
+                    "krushna_ai");
         }
     }
-
-    // =========================
-    // CLEANUP
-    // =========================
 
     @Override
     protected void onDestroy() {
 
         if (tts != null) {
-
             tts.stop();
             tts.shutdown();
         }
 
         super.onDestroy();
     }
-    }
+}
