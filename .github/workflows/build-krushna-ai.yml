@@ -32,14 +32,12 @@ jobs:
       - name: Replace MainActivity
         run: |
           mkdir -p "$PROJECT/app/src/main/java/com/example/aiassistant"
-
           cp MainActivity.java \
             "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java"
 
       - name: Add Krushna AI Logo
         run: |
           mkdir -p "$PROJECT/app/src/main/res/drawable"
-
           cp file_0000000009b081fab0d7a8e0c41526ef.png \
             "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
 
@@ -53,26 +51,15 @@ jobs:
           mkdir -p "$RES/mipmap-xxhdpi"
           mkdir -p "$RES/mipmap-xxxhdpi"
 
-          cp file_0000000009b081fab0d7a8e0c41526ef.png \
-            "$RES/mipmap-mdpi/ic_launcher.png"
-
-          cp file_0000000009b081fab0d7a8e0c41526ef.png \
-            "$RES/mipmap-hdpi/ic_launcher.png"
-
-          cp file_0000000009b081fab0d7a8e0c41526ef.png \
-            "$RES/mipmap-xhdpi/ic_launcher.png"
-
-          cp file_0000000009b081fab0d7a8e0c41526ef.png \
-            "$RES/mipmap-xxhdpi/ic_launcher.png"
-
-          cp file_0000000009b081fab0d7a8e0c41526ef.png \
-            "$RES/mipmap-xxxhdpi/ic_launcher.png"
+          cp file_0000000009b081fab0d7a8e0c41526ef.png "$RES/mipmap-mdpi/ic_launcher.png"
+          cp file_0000000009b081fab0d7a8e0c41526ef.png "$RES/mipmap-hdpi/ic_launcher.png"
+          cp file_0000000009b081fab0d7a8e0c41526ef.png "$RES/mipmap-xhdpi/ic_launcher.png"
+          cp file_0000000009b081fab0d7a8e0c41526ef.png "$RES/mipmap-xxhdpi/ic_launcher.png"
+          cp file_0000000009b081fab0d7a8e0c41526ef.png "$RES/mipmap-xxxhdpi/ic_launcher.png"
 
       - name: Set Manifest App Icon
         run: |
-          MANIFEST=$(find "$PROJECT" \
-            -name AndroidManifest.xml \
-            -print -quit)
+          MANIFEST=$(find "$PROJECT" -name AndroidManifest.xml -print -quit)
 
           if [ -z "$MANIFEST" ]; then
             echo "AndroidManifest.xml not found!"
@@ -80,31 +67,25 @@ jobs:
           fi
 
           sed -i 's#android:icon="[^"]*"#android:icon="@mipmap/ic_launcher"#g' "$MANIFEST"
-
           sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' "$MANIFEST"
 
       - name: Add Internet Permission
         run: |
-          MANIFEST=$(find "$PROJECT" \
-            -name AndroidManifest.xml \
-            -print -quit)
+          MANIFEST=$(find "$PROJECT" -name AndroidManifest.xml -print -quit)
 
           grep -q 'android.permission.INTERNET' "$MANIFEST" || \
           sed -i '/<manifest/a\
-          <uses-permission android:name="android.permission.INTERNET" />' \
-          "$MANIFEST"
+          <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
 
       - name: Add Microphone Permission
         run: |
-          MANIFEST=$(find "$PROJECT" \
-            -name AndroidManifest.xml \
-            -print -quit)
+          MANIFEST=$(find "$PROJECT" -name AndroidManifest.xml -print -quit)
 
           grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST" || \
           sed -i '/<manifest/a\
-          <uses-permission android:name="android.permission.RECORD_AUDIO" />' \
-          "$MANIFEST"
-                - name: Fix Layout
+          <uses-permission android:name="android.permission.RECORD_AUDIO" />' "$MANIFEST"
+
+      - name: Fix Layout
         run: |
           LAYOUT="$PROJECT/app/src/main/res/layout/activity_main.xml"
 
@@ -131,7 +112,6 @@ jobs:
 
       - name: Find APK
         run: |
-          echo "APK files:"
           find "$PROJECT" -type f -name "*.apk" -print
 
       - name: Upload Krushna AI APK
