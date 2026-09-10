@@ -18,10 +18,10 @@ jobs:
       - name: Find Android Project
         run: |
           PROJECT=$(find extracted -type f \
-            \( -name settings.gradle -o -name settings.gradle.kts \) \
-            | head -1 | xargs dirname)
+            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
+            -print -quit | xargs dirname)
 
-          if [ -z "$PROJECT" ]; then
+          if [ -z "$PROJECT" ] || [ "$PROJECT" = "." ]; then
             echo "Android Gradle project not found!"
             exit 1
           fi
@@ -43,25 +43,69 @@ jobs:
           cp file_0000000009b081fab0d7a8e0c41526ef.png \
             "$PROJECT/app/src/main/res/drawable/krushna_ai_logo.png"
 
+      - name: Set Krushna AI App Icon
+        run: |
+          RES="$PROJECT/app/src/main/res"
+
+          mkdir -p "$RES/mipmap-mdpi"
+          mkdir -p "$RES/mipmap-hdpi"
+          mkdir -p "$RES/mipmap-xhdpi"
+          mkdir -p "$RES/mipmap-xxhdpi"
+          mkdir -p "$RES/mipmap-xxxhdpi"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-mdpi/ic_launcher.png"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-hdpi/ic_launcher.png"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-xhdpi/ic_launcher.png"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-xxhdpi/ic_launcher.png"
+
+          cp file_0000000009b081fab0d7a8e0c41526ef.png \
+            "$RES/mipmap-xxxhdpi/ic_launcher.png"
+
+      - name: Set Manifest App Icon
+        run: |
+          MANIFEST=$(find "$PROJECT" \
+            -name "AndroidManifest.xml" \
+            -print -quit)
+
+          if [ -z "$MANIFEST" ]; then
+            echo "AndroidManifest.xml not found!"
+            exit 1
+          fi
+
+          sed -i 's#android:icon="@mipmap/[^"]*"#android:icon="@mipmap/ic_launcher"#g' "$MANIFEST"
+
+          sed -i 's#android:roundIcon="@mipmap/[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' "$MANIFEST"
+
       - name: Add Internet Permission
         run: |
           MANIFEST=$(find "$PROJECT" \
-            -name AndroidManifest.xml | head -1)
+            -name "AndroidManifest.xml" \
+            -print -quit)
 
-          grep -q 'android.permission.INTERNET' "$MANIFEST" || \
-          sed -i '/<manifest/a\
-          <uses-permission android:name="android.permission.INTERNET" />' \
-          "$MANIFEST"
+          if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            sed -i '/<manifest/a\
+            <uses-permission android:name="android.permission.INTERNET" />' \
+            "$MANIFEST"
+          fi
 
       - name: Add Microphone Permission
         run: |
           MANIFEST=$(find "$PROJECT" \
-            -name AndroidManifest.xml | head -1)
+            -name "AndroidManifest.xml" \
+            -print -quit)
 
-          grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST" || \
-          sed -i '/<manifest/a\
-          <uses-permission android:name="android.permission.RECORD_AUDIO" />' \
-          "$MANIFEST"
+          if ! grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"; then
+            sed -i '/<manifest/a\
+            <uses-permission android:name="android.permission.RECORD_AUDIO" />' \
+            "$MANIFEST"
+          fi
 
       - name: Fix Layout
         run: |
