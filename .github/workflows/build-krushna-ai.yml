@@ -67,6 +67,15 @@ jobs:
 
           cp file_0000000009b081fab0d7a8e0c41526ef.png \
             "$RES/mipmap-xxxhdpi/ic_launcher.png"
+            - name: Force Launcher Icon
+        run: |
+          MANIFEST=$(find "$PROJECT" -name "AndroidManifest.xml" -print -quit")
+
+          sed -i 's/android:icon="[^"]*"/android:icon="@mipmap\/ic_launcher"/g' "$MANIFEST"
+          sed -i 's/android:roundIcon="[^"]*"/android:roundIcon="@mipmap\/ic_launcher"/g' "$MANIFEST"
+
+          echo "Launcher icon set to Krushna AI logo"
+          grep -n "android:icon" "$MANIFEST"
 
       - name: Set Manifest App Icon
         run: |
