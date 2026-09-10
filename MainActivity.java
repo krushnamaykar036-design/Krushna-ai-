@@ -2,6 +2,7 @@ package com.example.aiassistant;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -33,6 +34,7 @@ public class MainActivity extends Activity {
     TextToSpeech tts;
 
     static final int VOICE = 10;
+    static final int CONFIRM_VOICE = 11;
     static final int MIC_PERMISSION = 20;
     static final int CALL_PERMISSION = 30;
     static final int CONTACT_PERMISSION = 40;
@@ -95,7 +97,6 @@ public class MainActivity extends Activity {
             String finalAnswer = answer;
 
             runOnUiThread(() -> {
-
                 chat.append(
                         "Krushna AI: " +
                         finalAnswer +
@@ -112,6 +113,28 @@ public class MainActivity extends Activity {
 
         String text =
                 q.toLowerCase(Locale.ROOT).trim();
+
+        // Confirmation answer
+        if (pendingNumber != null &&
+                (text.equals("हो") ||
+                 text.equals("होय") ||
+                 text.equals("yes") ||
+                 text.equals("ha") ||
+                 text.equals("haa"))) {
+
+            confirmCallNow();
+            return true;
+        }
+
+        if (pendingNumber != null &&
+                (text.equals("नाही") ||
+                 text.equals("नको") ||
+                 text.equals("no") ||
+                 text.equals("nahi"))) {
+
+            cancelCall();
+            return true;
+        }
 
         if (text.contains("settings") ||
                 text.contains("setting") ||
@@ -277,9 +300,8 @@ public class MainActivity extends Activity {
             String normalizedPackage =
                     normalize(packageName);
 
-            if (normalizedLabel.contains(wanted) ||
-                    wanted.contains(normalizedLabel) ||
-                    normalizedPackage.contains(wanted)) {
+            if (normalizedLabel.equals(wanted) ||
+                    normalizedPackage.equals(wanted)) {
 
                 Intent launch =
                         pm.getLaunchIntentForPackage(
@@ -312,7 +334,7 @@ public class MainActivity extends Activity {
 
         return value
                 .toLowerCase(Locale.ROOT)
-                .replace(" ", "")
+                .replaceAll("\\s+", "")
                 .replace("-", "")
                 .replace("_", "")
                 .replace(".", "");
@@ -333,10 +355,7 @@ public class MainActivity extends Activity {
                     CONTACT_PERMISSION
             );
 
-            speak(
-                    "Contacts permission आवश्यक आहे"
-            );
-
+            speak("Contacts permission आवश्यक आहे");
             return;
         }
 
@@ -393,42 +412,11 @@ public class MainActivity extends Activity {
             String contact =
                     normalizeContact(contactName);
 
-            // पूर्ण नाव match
+            // फक्त पूर्ण नाव exact match
             if (contact.equals(wanted)) {
 
                 foundName = contactName;
                 foundNumber = number;
-                break;
-            }
-
-            // नावाचा भाग match
-            if (contact.contains(wanted) ||
-                    wanted.contains(contact)) {
-
-                foundName = contactName;
-                foundNumber = number;
-                break;
-            }
-
-            // प्रत्येक शब्द match
-            String[] parts =
-                    name.trim().split("\\s+");
-
-            for (String part : parts) {
-
-                String p =
-                        normalizeContact(part);
-
-                if (p.length() >= 2 &&
-                        contact.contains(p)) {
-
-                    foundName = contactName;
-                    foundNumber = number;
-                    break;
-                }
-            }
-
-            if (foundNumber != null) {
                 break;
             }
         }
@@ -438,22 +426,9 @@ public class MainActivity extends Activity {
         if (foundNumber != null) {
 
             pendingNumber = foundNumber;
+            pendingContactName = foundName;
 
-            if (checkSelfPermission(
-                    Manifest.permission.CALL_PHONE)
-                    != PackageManager.PERMISSION_GRANTED) {
-
-                requestPermissions(
-                        new String[]{
-                                Manifest.permission.CALL_PHONE
-                        },
-                        CALL_PERMISSION
-                );
-
-                return;
-            }
-
-            makeCall(foundNumber);
+            askCallConfirmation(foundName);
             return;
         }
 
@@ -471,6 +446,104 @@ public class MainActivity extends Activity {
                         "[^a-z0-9\\u0900-\\u097F]",
                         ""
                 );
+    }
+
+    void askCallConfirmation(String contactName) {
+
+        String message =
+                contactName +
+                " ला call करायचा का?";
+
+        chat.append(
+                "Krushna AI: " +
+                message +
+                "\n\n"
+        );
+
+        speak(message);
+
+        // Voice confirmation ऐकणे
+        new android.os.Handler().postDelayed(
+                () -> startConfirmationVoice(),
+                1800
+        );
+    }
+
+    void startConfirmationVoice() {
+
+        if (checkSelfPermission(
+                Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        Intent i =
+                new Intent(
+                        RecognizerIntent
+                                .ACTION_RECOGNIZE_SPEECH
+                );
+
+        i.putExtra(
+                RecognizerIntent
+                        .EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent
+                        .LANGUAGE_MODEL_FREE_FORM
+        );
+
+        i.putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE,
+                "mr-IN"
+        );
+
+        startActivityForResult(
+                i,
+                CONFIRM_VOICE
+        );
+    }
+
+    void confirmCallNow() {
+
+        if (pendingNumber == null) {
+            return;
+        }
+
+        String number = pendingNumber;
+
+        pendingNumber = null;
+
+        String name = pendingContactName;
+        pendingContactName = null;
+
+        if (checkSelfPermission(
+                Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            pendingNumber = number;
+            pendingContactName = name;
+
+            requestPermissions(
+                    new String[]{
+                            Manifest.permission.CALL_PHONE
+                    },
+                    CALL_PERMISSION
+            );
+
+            return;
+        }
+
+        makeCall(number);
+    }
+
+    void cancelCall() {
+
+        pendingNumber = null;
+        pendingContactName = null;
+
+        chat.append(
+                "Krushna AI: Call cancel केला.\n\n"
+        );
+
+        speak("Call cancel केला");
     }
 
     void makeCall(String number) {
@@ -548,8 +621,7 @@ public class MainActivity extends Activity {
         BufferedReader reader =
                 new BufferedReader(
                         new InputStreamReader(
-                                connection
-                                        .getInputStream()
+                                connection.getInputStream()
                         )
                 );
 
@@ -611,7 +683,6 @@ public class MainActivity extends Activity {
         i.putExtra(
                 RecognizerIntent
                         .EXTRA_LANGUAGE_MODEL,
-
                 RecognizerIntent
                         .LANGUAGE_MODEL_FREE_FORM
         );
@@ -639,24 +710,45 @@ public class MainActivity extends Activity {
                 data
         );
 
-        if (requestCode == VOICE &&
-                resultCode == RESULT_OK &&
-                data != null) {
+        if (resultCode != RESULT_OK ||
+                data == null) {
+            return;
+        }
 
-            ArrayList<String> results =
-                    data.getStringArrayListExtra(
-                            RecognizerIntent
-                                    .EXTRA_RESULTS
-                    );
-
-            if (results != null &&
-                    !results.isEmpty()) {
-
-                input.setText(
-                        results.get(0)
+        ArrayList<String> results =
+                data.getStringArrayListExtra(
+                        RecognizerIntent.EXTRA_RESULTS
                 );
 
-                send();
+        if (results == null ||
+                results.isEmpty()) {
+            return;
+        }
+
+        String spoken = results.get(0);
+
+        if (requestCode == VOICE) {
+
+            input.setText(spoken);
+            send();
+        }
+
+        if (requestCode == CONFIRM_VOICE) {
+
+            String answer =
+                    spoken.toLowerCase(Locale.ROOT)
+                            .trim();
+
+            if (answer.contains("हो") ||
+                    answer.contains("होय") ||
+                    answer.contains("yes") ||
+                    answer.contains("हा")) {
+
+                confirmCallNow();
+
+            } else {
+
+                cancelCall();
             }
         }
     }
@@ -688,9 +780,12 @@ public class MainActivity extends Activity {
 
             if (pendingNumber != null) {
 
-                makeCall(pendingNumber);
+                String number = pendingNumber;
 
                 pendingNumber = null;
+                pendingContactName = null;
+
+                makeCall(number);
             }
         }
 
@@ -741,4 +836,4 @@ public class MainActivity extends Activity {
 
         super.onDestroy();
     }
-            }
+    }
