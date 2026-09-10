@@ -98,3 +98,12 @@ jobs:
           name: Krushna-AI-APK
           path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+                - name: Replace MainActivity
+        run: |
+          ...
+          cp MainActivity.java \
+            "$PROJECT/app/src/main/java/com/example/aiassistant/MainActivity.java"
+
+      # ⬅️ इथे Add Logo To Screen टाक
+
+      - name: Add Krushna AI Logo
