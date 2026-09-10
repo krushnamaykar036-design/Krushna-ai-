@@ -9,6 +9,9 @@ import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.ImageView;
+import android.widget.FrameLayout;
+import android.view.Gravity;
 
 import org.json.JSONObject;
 
@@ -43,6 +46,24 @@ public class MainActivity extends Activity {
 
         findViewById(R.id.send).setOnClickListener(v -> send());
         findViewById(R.id.mic).setOnClickListener(v -> voice());
+
+        // Krushna AI Logo
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.krushna_ai_logo);
+        logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+
+        int size = (int) (120 * getResources().getDisplayMetrics().density);
+
+        FrameLayout.LayoutParams logoParams =
+                new FrameLayout.LayoutParams(size, size);
+
+        logoParams.gravity =
+                Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+        logoParams.topMargin =
+                (int) (12 * getResources().getDisplayMetrics().density);
+
+        addContentView(logo, logoParams);
 
         tts = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
