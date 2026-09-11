@@ -791,9 +791,7 @@ return result
                 ""
         )
         .trim();} 
-                    }
-
-    @Override
+        @Override
     protected void onDestroy() {
         if (tts != null) {
             tts.stop();
@@ -802,3 +800,5 @@ return result
         super.onDestroy();
     }
 }
+                    
+
