@@ -484,28 +484,12 @@ protected void onDestroy() {
 
             speak("Microphone permission दिली नाही");
         }
-    }
+    
 
     void speak(String text) {
 
         if (tts == null ||
-                text == null ||
-                text.isEmpty()) {
-
-            return;
-        }
-
-        tts.speak(
-                text,
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                "KRUSHNA_AI"
-        );
-    }
-
-    @Override
-    protected void onDestroy() {
-        @Override
+            @Override
 protected void onDestroy() {
     if (tts != null) {
         tts.stop();
@@ -513,6 +497,9 @@ protected void onDestroy() {
     }
 
     super.onDestroy();
-        }
+}
+
+    }
+                
 
         
