@@ -466,40 +466,95 @@ protected void onDestroy() {
             int requestCode,
             String[] permissions,
             int[] grantResults) {
+            String askServer(String question) throws Exception {
 
-        super.onRequestPermissionsResult(
-                requestCode,
-                permissions,
-                grantResults
+        URL url = new URL(SERVER_URL);
+
+        HttpURLConnection connection =
+                (HttpURLConnection) url.openConnection();
+
+        connection.setRequestMethod("POST");
+        connection.setConnectTimeout(20000);
+        connection.setReadTimeout(40000);
+        connection.setDoOutput(true);
+        connection.setRequestProperty(
+                "Content-Type",
+                "application/json"
         );
 
-        if (requestCode == MIC_PERMISSION &&
-                grantResults.length > 0 &&
-                grantResults[0] ==
-                        PackageManager.PERMISSION_GRANTED) {
+        JSONObject body = new JSONObject();
+        body.put("message", question);
 
-            startVoice();
+        byte[] data = body.toString()
+                .getBytes(StandardCharsets.UTF_8);
 
-        } else if (requestCode == MIC_PERMISSION) {
+        OutputStream output =
+                connection.getOutputStream();
 
-            speak("Microphone permission दिली नाही");
+        output.write(data);
+        output.flush();
+        output.close();
+
+        int code = connection.getResponseCode();
+
+        if (code < 200 || code >= 300) {
+            connection.disconnect();
+            return null;
         }
-    
+
+        BufferedReader reader =
+                new BufferedReader(
+                        new InputStreamReader(
+                                connection.getInputStream()
+                        )
+                );
+
+        StringBuilder response =
+                new StringBuilder();
+
+        String line;
+
+        while ((line = reader.readLine()) != null) {
+            response.append(line);
+        }
+
+        reader.close();
+        connection.disconnect();
+
+        JSONObject result =
+                new JSONObject(response.toString());
+
+        return result.optString("reply", "").trim();
+    }
 
     void speak(String text) {
 
-        if (tts == null ||
-            @Override
-protected void onDestroy() {
-    if (tts != null) {
-        tts.stop();
-        tts.shutdown();
+        if (tts != null &&
+                text != null &&
+                !text.isEmpty()) {
+
+            tts.speak(
+                    text,
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "KRUSHNA_AI"
+            );
+        }
     }
 
-    super.onDestroy();
+    @Override
+    protected void onDestroy() {
+
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+        }
+
+        super.onDestroy();
+    }
 }
 
-    }
+        
                 
 
         
