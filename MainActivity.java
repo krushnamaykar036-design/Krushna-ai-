@@ -142,7 +142,64 @@ public class MainActivity extends Activity {
                 text.contains("setting") ||
                 text.contains("सेटिंग") ||
                 text.contains("सेटिंग्स")) {
+            if (lower.contains("camera")) {
+    try {
+        Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+        startActivity(intent);
+        speak("Camera उघडत आहे");
+    } catch (Exception e) {
+        speak("Camera उघडता आली नाही");
+    }
+    return true;
+}
 
+if (lower.contains("whatsapp")) {
+    try {
+        Intent intent = getPackageManager()
+                .getLaunchIntentForPackage("com.whatsapp");
+        if (intent != null) {
+            startActivity(intent);
+            speak("WhatsApp उघडत आहे");
+        } else {
+            speak("WhatsApp फोनमध्ये नाही");
+        }
+    } catch (Exception e) {
+        speak("WhatsApp उघडता आले नाही");
+    }
+    return true;
+}
+
+if (lower.contains("youtube")) {
+    try {
+        Intent intent = getPackageManager()
+                .getLaunchIntentForPackage("com.google.android.youtube");
+        if (intent != null) {
+            startActivity(intent);
+            speak("YouTube उघडत आहे");
+        } else {
+            speak("YouTube फोनमध्ये नाही");
+        }
+    } catch (Exception e) {
+        speak("YouTube उघडता आले नाही");
+    }
+    return true;
+}
+
+if (lower.contains("chrome")) {
+    try {
+        Intent intent = getPackageManager()
+                .getLaunchIntentForPackage("com.android.chrome");
+        if (intent != null) {
+            startActivity(intent);
+            speak("Chrome उघडत आहे");
+        } else {
+            speak("Chrome फोनमध्ये नाही");
+        }
+    } catch (Exception e) {
+        speak("Chrome उघडता आले नाही");
+    }
+    return true;
+}
             try {
 
                 startActivity(
