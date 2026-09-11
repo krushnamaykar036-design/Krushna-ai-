@@ -790,7 +790,7 @@ return result
                 "reply",
                 ""
         )
-        .trim();
+        .trim();} 
                     }
 
     @Override
