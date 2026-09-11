@@ -3,6 +3,7 @@ package com.example.aiassistant;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -189,27 +191,10 @@ public class MainActivity extends Activity {
                 text.contains("व्हाट्सअप") ||
                 text.contains("व्हॉट्सअॅप")) {
 
-            try {
-
-                Intent intent =
-                        getPackageManager()
-                                .getLaunchIntentForPackage(
-                                        "com.whatsapp"
-                                );
-
-                if (intent != null) {
-
-                    startActivity(intent);
-                    speak("WhatsApp उघडत आहे");
-
-                } else {
-
-                    speak("WhatsApp फोनमध्ये नाही");
-                }
-
-            } catch (Exception e) {
-
-                speak("WhatsApp उघडता आले नाही");
+            if (openPackage("com.whatsapp")) {
+                speak("WhatsApp उघडत आहे");
+            } else {
+                speak("WhatsApp फोनमध्ये नाही");
             }
 
             return true;
@@ -220,27 +205,14 @@ public class MainActivity extends Activity {
                 text.contains("यूट्यूब") ||
                 text.contains("युट्युब")) {
 
-            try {
+            if (openPackage(
+                    "com.google.android.youtube")) {
 
-                Intent intent =
-                        getPackageManager()
-                                .getLaunchIntentForPackage(
-                                        "com.google.android.youtube"
-                                );
+                speak("YouTube उघडत आहे");
 
-                if (intent != null) {
+            } else {
 
-                    startActivity(intent);
-                    speak("YouTube उघडत आहे");
-
-                } else {
-
-                    speak("YouTube फोनमध्ये नाही");
-                }
-
-            } catch (Exception e) {
-
-                speak("YouTube उघडता आले नाही");
+                speak("YouTube फोनमध्ये नाही");
             }
 
             return true;
@@ -250,27 +222,13 @@ public class MainActivity extends Activity {
         if (text.contains("chrome") ||
                 text.contains("क्रोम")) {
 
-            try {
+            if (openPackage("com.android.chrome")) {
 
-                Intent intent =
-                        getPackageManager()
-                                .getLaunchIntentForPackage(
-                                        "com.android.chrome"
-                                );
+                speak("Chrome उघडत आहे");
 
-                if (intent != null) {
+            } else {
 
-                    startActivity(intent);
-                    speak("Chrome उघडत आहे");
-
-                } else {
-
-                    speak("Chrome फोनमध्ये नाही");
-                }
-
-            } catch (Exception e) {
-
-                speak("Chrome उघडता आले नाही");
+                speak("Chrome फोनमध्ये नाही");
             }
 
             return true;
@@ -333,20 +291,10 @@ public class MainActivity extends Activity {
 
             try {
 
-                Intent intent =
-                        getPackageManager()
-                                .getLaunchIntentForPackage(
-                                        "com.google.android.apps.maps"
-                                );
+                if (!openPackage(
+                        "com.google.android.apps.maps")) {
 
-                if (intent != null) {
-
-                    startActivity(intent);
-                    speak("Google Maps उघडत आहे");
-
-                } else {
-
-                    Intent webIntent =
+                    Intent intent =
                             new Intent(
                                     Intent.ACTION_VIEW,
                                     Uri.parse(
@@ -354,9 +302,10 @@ public class MainActivity extends Activity {
                                     )
                             );
 
-                    startActivity(webIntent);
-                    speak("Maps उघडत आहे");
+                    startActivity(intent);
                 }
+
+                speak("Maps उघडत आहे");
 
             } catch (Exception e) {
 
@@ -366,7 +315,124 @@ public class MainActivity extends Activity {
             return true;
         }
 
+        // INSTALLED APP SEARCH
+        if (text.contains("open") ||
+                text.contains("उघड") ||
+                text.contains("चालू") ||
+                text.contains("start")) {
+
+            String appName = text
+                    .replace("open", "")
+                    .replace("उघड", "")
+                    .replace("चालू", "")
+                    .replace("start", "")
+                    .trim();
+
+            if (!appName.isEmpty()) {
+
+                if (openInstalledApp(appName)) {
+                    return true;
+                }
+
+                speak("हा app सापडला नाही");
+                return true;
+            }
+        }
+
+        // ALSO TRY APP SEARCH FOR SHORT COMMANDS
+        if (openInstalledApp(text)) {
+            return true;
+        }
+
         return false;
+    }
+
+    private boolean openPackage(String packageName) {
+
+        try {
+
+            Intent intent =
+                    getPackageManager()
+                            .getLaunchIntentForPackage(
+                                    packageName
+                            );
+
+            if (intent != null) {
+
+                startActivity(intent);
+                return true;
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return false;
+    }
+
+    private boolean openInstalledApp(String requestedName) {
+
+        try {
+
+            PackageManager pm =
+                    getPackageManager();
+
+            List<ApplicationInfo> apps =
+                    pm.getInstalledApplications(
+                            PackageManager.GET_META_DATA
+                    );
+
+            String wanted =
+                    cleanAppName(requestedName);
+
+            for (ApplicationInfo app : apps) {
+
+                Intent launchIntent =
+                        pm.getLaunchIntentForPackage(
+                                app.packageName
+                        );
+
+                if (launchIntent == null) {
+                    continue;
+                }
+
+                String label =
+                        pm.getApplicationLabel(app)
+                                .toString();
+
+                String cleanLabel =
+                        cleanAppName(label);
+
+                if (cleanLabel.equals(wanted) ||
+                        cleanLabel.contains(wanted) ||
+                        wanted.contains(cleanLabel)) {
+
+                    startActivity(launchIntent);
+
+                    speak(label + " उघडत आहे");
+
+                    return true;
+                }
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return false;
+    }
+
+    private String cleanAppName(String name) {
+
+        if (name == null) {
+            return "";
+        }
+
+        return name
+                .toLowerCase(Locale.ROOT)
+                .replace("app", "")
+                .replace("उघड", "")
+                .replace("चालू", "")
+                .replace("open", "")
+                .trim();
     }
 
     private String askServer(String question)
@@ -586,4 +652,4 @@ public class MainActivity extends Activity {
 
         super.onDestroy();
     }
-}
+        }
