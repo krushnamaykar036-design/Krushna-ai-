@@ -58,89 +58,61 @@ public class MainActivity extends Activity {
         chat = findViewById(R.id.chat);
         input = findViewById(R.id.input);
 
-        /*
-         * MIC BUTTON HIDDEN
-         */
         View micButton = findViewById(R.id.mic);
 
         if (micButton != null) {
             micButton.setVisibility(View.GONE);
         }
 
-        /*
-         * SEND BUTTON
-         */
         View sendButton = findViewById(R.id.send);
 
         if (sendButton != null) {
             sendButton.setOnClickListener(v -> send());
         }
 
-        /*
-         * TEXT TO SPEECH
-         */
         tts = new TextToSpeech(this, status -> {
 
             if (status == TextToSpeech.SUCCESS) {
 
-                int result =
-                        tts.setLanguage(
-                                new Locale("mr", "IN")
-                        );
+                int result = tts.setLanguage(
+                        new Locale("mr", "IN")
+                );
 
-                if (result ==
-                        TextToSpeech.LANG_MISSING_DATA ||
-                        result ==
-                        TextToSpeech.LANG_NOT_SUPPORTED) {
+                if (result == TextToSpeech.LANG_MISSING_DATA ||
+                        result == TextToSpeech.LANG_NOT_SUPPORTED) {
 
                     tts.setLanguage(Locale.getDefault());
                 }
             }
         });
 
-        /*
-         * START VOICE LISTENING
-         *
-         * App screen open झाल्यावर
-         * microphone permission असेल तर
-         * voice recognition सुरू करण्याचा प्रयत्न.
-         */
         new Handler().postDelayed(
                 () -> startWakeListening(),
                 1000
         );
     }
 
-    /*
-     * =========================
-     * SEND / AI
-     * =========================
-     */
+    // =========================
+    // SEND
+    // =========================
 
     void send() {
 
-        String q =
-                input.getText()
-                        .toString()
-                        .trim();
+        String q = input.getText()
+                .toString()
+                .trim();
 
         if (q.isEmpty()) {
             return;
         }
 
         if (handleCommand(q)) {
-
             input.setText("");
             return;
         }
 
-        chat.append(
-                "You: " + q + "\n"
-        );
-
-        chat.append(
-                "Krushna AI: विचार करतोय...\n\n"
-        );
+        chat.append("You: " + q + "\n");
+        chat.append("Krushna AI: विचार करतोय...\n\n");
 
         input.setText("");
 
@@ -155,8 +127,7 @@ public class MainActivity extends Activity {
                 if (answer == null ||
                         answer.isEmpty()) {
 
-                    answer =
-                            "Server कडून उत्तर मिळाले नाही.";
+                    answer = "Server कडून उत्तर मिळाले नाही.";
                 }
 
             } catch (Exception e) {
@@ -171,8 +142,8 @@ public class MainActivity extends Activity {
 
                 chat.append(
                         "Krushna AI: " +
-                        finalAnswer +
-                        "\n\n"
+                                finalAnswer +
+                                "\n\n"
                 );
 
                 speak(finalAnswer);
@@ -181,40 +152,29 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    /*
-     * =========================
-     * COMMAND HANDLER
-     * =========================
-     */
+    // =========================
+    // COMMAND HANDLER
+    // =========================
 
     boolean handleCommand(String q) {
 
-        String text =
-                q.toLowerCase(Locale.ROOT)
-                        .trim();
-
-        /*
-         * CALL CONFIRMATION
-         */
+        String text = q.toLowerCase(Locale.ROOT)
+                .trim();
 
         if (pendingNumber != null) {
 
             if (isYes(text)) {
-
                 confirmCallNow();
                 return true;
             }
 
             if (isNo(text)) {
-
                 cancelCall();
                 return true;
             }
         }
 
-        /*
-         * SETTINGS
-         */
+        // SETTINGS
 
         if (text.contains("settings") ||
                 text.contains("setting") ||
@@ -230,9 +190,7 @@ public class MainActivity extends Activity {
             return true;
         }
 
-        /*
-         * CAMERA
-         */
+        // CAMERA
 
         if (text.contains("camera") ||
                 text.contains("कॅमेरा")) {
@@ -257,9 +215,7 @@ public class MainActivity extends Activity {
             return true;
         }
 
-        /*
-         * CALL
-         */
+        // CALL
 
         if (isCallCommand(text)) {
 
@@ -272,17 +228,13 @@ public class MainActivity extends Activity {
 
             } else {
 
-                speak(
-                        "कोणाला call करायचा ते सांगा"
-                );
+                speak("कोणाला call करायचा ते सांगा");
             }
 
             return true;
         }
 
-        /*
-         * OPEN APP
-         */
+        // OPEN APP
 
         if (text.contains("open") ||
                 text.contains("ओपन") ||
@@ -300,11 +252,9 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    /*
-     * =========================
-     * CALL COMMAND
-     * =========================
-     */
+    // =========================
+    // CALL COMMAND
+    // =========================
 
     boolean isCallCommand(String text) {
 
@@ -342,8 +292,7 @@ public class MainActivity extends Activity {
 
         for (String word : removeWords) {
 
-            result =
-                    result.replace(word, " ");
+            result = result.replace(word, " ");
         }
 
         return result
@@ -351,11 +300,9 @@ public class MainActivity extends Activity {
                 .trim();
     }
 
-    /*
-     * =========================
-     * APP OPEN
-     * =========================
-     */
+    // =========================
+    // APP OPEN
+    // =========================
 
     String extractAppName(String text) {
 
@@ -376,8 +323,7 @@ public class MainActivity extends Activity {
 
         for (String word : words) {
 
-            result =
-                    result.replace(word, " ");
+            result = result.replace(word, " ");
         }
 
         return result
@@ -413,12 +359,10 @@ public class MainActivity extends Activity {
                 apps) {
 
             String label =
-                    info.loadLabel(pm)
-                            .toString();
+                    info.loadLabel(pm).toString();
 
             String packageName =
-                    info.activityInfo
-                            .packageName;
+                    info.activityInfo.packageName;
 
             String normalizedLabel =
                     normalize(label);
@@ -440,7 +384,7 @@ public class MainActivity extends Activity {
 
                     speak(
                             label +
-                            " उघडत आहे"
+                                    " उघडत आहे"
                     );
 
                     return true;
@@ -450,7 +394,7 @@ public class MainActivity extends Activity {
 
         speak(
                 "हा App सापडला नाही: " +
-                requested
+                        requested
         );
 
         return true;
@@ -466,11 +410,9 @@ public class MainActivity extends Activity {
                 .replace(".", "");
     }
 
-    /*
-     * =========================
-     * CONTACT SEARCH
-     * =========================
-     */
+    // =========================
+    // CONTACT SEARCH
+    // =========================
 
     void findContactAndCall(String name) {
 
@@ -554,10 +496,6 @@ public class MainActivity extends Activity {
             String normalizedContact =
                     normalizeContact(contactName);
 
-            /*
-             * NAME MATCH
-             */
-
             if (normalizedContact.equals(wanted)) {
 
                 foundName = contactName;
@@ -565,10 +503,6 @@ public class MainActivity extends Activity {
 
                 break;
             }
-
-            /*
-             * NUMBER MATCH
-             */
 
             String wantedNumber =
                     normalizePhone(name);
@@ -600,13 +534,13 @@ public class MainActivity extends Activity {
 
         chat.append(
                 "Krushna AI: Contact सापडला नाही: " +
-                name +
-                "\n\n"
+                        name +
+                        "\n\n"
         );
 
         speak(
                 name +
-                " contact सापडला नाही"
+                        " contact सापडला नाही"
         );
     }
 
@@ -622,26 +556,26 @@ public class MainActivity extends Activity {
 
     String normalizePhone(String value) {
 
-        return value
-                .replaceAll("[^0-9]", "");
+        return value.replaceAll(
+                "[^0-9]",
+                ""
+        );
     }
 
-    /*
-     * =========================
-     * CALL CONFIRMATION
-     * =========================
-     */
+    // =========================
+    // CALL CONFIRMATION
+    // =========================
 
     void askCallConfirmation(String contactName) {
 
         String message =
                 contactName +
-                " ला call करायचा का?";
+                        " ला call करायचा का?";
 
         chat.append(
                 "Krushna AI: " +
-                message +
-                "\n\n"
+                        message +
+                        "\n\n"
         );
 
         speak(message);
@@ -717,9 +651,6 @@ public class MainActivity extends Activity {
         String number =
                 pendingNumber;
 
-        String name =
-                pendingContactName;
-
         if (checkSelfPermission(
                 Manifest.permission.CALL_PHONE)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -774,11 +705,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    /*
-     * =========================
-     * AI SERVER
-     * =========================
-     */
+    // =========================
+    // AI SERVER
+    // =========================
 
     String askServer(String question)
             throws Exception {
@@ -817,87 +746,48 @@ public class MainActivity extends Activity {
                         );
 
         OutputStream output =
-                connection.getOutputStream();
+               connection.getOutputStream();
 
-        output.write(data);
-        output.flush();
-        output.close();
+output.write(data);
+output.flush();
+output.close();
 
-        int code =
-                connection.getResponseCode();
+int code =
+        connection.getResponseCode();
 
-        if (code < 200 || code >= 300) {
+if (code < 200 || code >= 300) {
+    connection.disconnect();
+    return null;
+}
 
-            connection.disconnect();
-
-            return null;
-        }
-
-        BufferedReader reader =
-                new BufferedReader(
-                        new InputStreamReader(
-                                connection
-                                        .getInputStream()
-                        )
-                );
-
-        StringBuilder response =
-                new StringBuilder();
-
-        String line;
-
-        while ((line =
-                reader.readLine()) != null) {
-
-            response.append(line);
-        }
-
-        reader.close();
-
-        connection.disconnect();
-
-        JSONObject result =
-                new JSONObject(
-                        response.toString()
-                );
-
-        return result
-                .optString(
-                        "reply",
-                        ""
+BufferedReader reader =
+        new BufferedReader(
+                new InputStreamReader(
+                        connection.getInputStream()
                 )
-                .trim();
-    }
+        );
 
-    /*
-     * =========================
-     * NORMAL VOICE
-     * =========================
-     */
+StringBuilder response =
+        new StringBuilder();
 
-    void voice() {
+String line;
 
-        if (checkSelfPermission(
-                Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
+while ((line = reader.readLine()) != null) {
+    response.append(line);
+}
 
-            requestPermissions(
-                    new String[]{
-                            Manifest.permission.RECORD_AUDIO
-                    },
-                    MIC_PERMISSION
-            );
+reader.close();
 
-            return;
-        }
+connection.disconnect();
 
-        startVoice();
-    }
+JSONObject result =
+        new JSONObject(
+                response.toString()
+        );
 
-    void startVoice() {
-
-        Intent i =
-                new Intent(
-                        RecognizerIntent
-                                .ACTION_RECOGNIZE_SP 
-                    }
+return result
+        .optString(
+                "reply",
+                ""
+        )
+        .trim();
