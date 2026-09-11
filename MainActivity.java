@@ -56,7 +56,6 @@ public class MainActivity extends Activity {
         }
 
         tts = new TextToSpeech(this, status -> {
-
             if (status == TextToSpeech.SUCCESS) {
 
                 int result = tts.setLanguage(
@@ -88,13 +87,8 @@ public class MainActivity extends Activity {
             return;
         }
 
-        chat.append(
-                "You: " + message + "\n\n"
-        );
-
-        chat.append(
-                "Krushna AI: विचार करतोय...\n\n"
-        );
+        chat.append("You: " + message + "\n\n");
+        chat.append("Krushna AI: विचार करतोय...\n\n");
 
         new Thread(() -> {
 
@@ -106,8 +100,7 @@ public class MainActivity extends Activity {
                 if (answer == null ||
                         answer.trim().isEmpty()) {
 
-                    answer =
-                            "Server कडून उत्तर मिळाले नाही.";
+                    answer = "Server कडून उत्तर मिळाले नाही.";
                 }
 
             } catch (Exception e) {
@@ -138,74 +131,16 @@ public class MainActivity extends Activity {
                 .toLowerCase(Locale.ROOT)
                 .trim();
 
+        // SETTINGS
         if (text.contains("settings") ||
                 text.contains("setting") ||
                 text.contains("सेटिंग") ||
                 text.contains("सेटिंग्स")) {
-            if (lower.contains("camera")) {
-    try {
-        Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
-        startActivity(intent);
-        speak("Camera उघडत आहे");
-    } catch (Exception e) {
-        speak("Camera उघडता आली नाही");
-    }
-    return true;
-}
 
-if (lower.contains("whatsapp")) {
-    try {
-        Intent intent = getPackageManager()
-                .getLaunchIntentForPackage("com.whatsapp");
-        if (intent != null) {
-            startActivity(intent);
-            speak("WhatsApp उघडत आहे");
-        } else {
-            speak("WhatsApp फोनमध्ये नाही");
-        }
-    } catch (Exception e) {
-        speak("WhatsApp उघडता आले नाही");
-    }
-    return true;
-}
-
-if (lower.contains("youtube")) {
-    try {
-        Intent intent = getPackageManager()
-                .getLaunchIntentForPackage("com.google.android.youtube");
-        if (intent != null) {
-            startActivity(intent);
-            speak("YouTube उघडत आहे");
-        } else {
-            speak("YouTube फोनमध्ये नाही");
-        }
-    } catch (Exception e) {
-        speak("YouTube उघडता आले नाही");
-    }
-    return true;
-}
-
-if (lower.contains("chrome")) {
-    try {
-        Intent intent = getPackageManager()
-                .getLaunchIntentForPackage("com.android.chrome");
-        if (intent != null) {
-            startActivity(intent);
-            speak("Chrome उघडत आहे");
-        } else {
-            speak("Chrome फोनमध्ये नाही");
-        }
-    } catch (Exception e) {
-        speak("Chrome उघडता आले नाही");
-    }
-    return true;
-}
             try {
 
                 startActivity(
-                        new Intent(
-                                Settings.ACTION_SETTINGS
-                        )
+                        new Intent(Settings.ACTION_SETTINGS)
                 );
 
                 speak("Settings उघडत आहे");
@@ -213,6 +148,120 @@ if (lower.contains("chrome")) {
             } catch (Exception e) {
 
                 speak("Settings उघडता आली नाही");
+            }
+
+            return true;
+        }
+
+        // CAMERA
+        if (text.contains("camera") ||
+                text.contains("कॅमेरा")) {
+
+            try {
+
+                Intent intent = new Intent(
+                        "android.media.action.IMAGE_CAPTURE"
+                );
+
+                startActivity(intent);
+
+                speak("Camera उघडत आहे");
+
+            } catch (Exception e) {
+
+                speak("Camera उघडता आली नाही");
+            }
+
+            return true;
+        }
+
+        // WHATSAPP
+        if (text.contains("whatsapp") ||
+                text.contains("व्हाट्सअप") ||
+                text.contains("व्हॉट्सअॅप")) {
+
+            try {
+
+                Intent intent =
+                        getPackageManager()
+                                .getLaunchIntentForPackage(
+                                        "com.whatsapp"
+                                );
+
+                if (intent != null) {
+
+                    startActivity(intent);
+                    speak("WhatsApp उघडत आहे");
+
+                } else {
+
+                    speak("WhatsApp फोनमध्ये नाही");
+                }
+
+            } catch (Exception e) {
+
+                speak("WhatsApp उघडता आले नाही");
+            }
+
+            return true;
+        }
+
+        // YOUTUBE
+        if (text.contains("youtube") ||
+                text.contains("यूट्यूब") ||
+                text.contains("युट्युब")) {
+
+            try {
+
+                Intent intent =
+                        getPackageManager()
+                                .getLaunchIntentForPackage(
+                                        "com.google.android.youtube"
+                                );
+
+                if (intent != null) {
+
+                    startActivity(intent);
+                    speak("YouTube उघडत आहे");
+
+                } else {
+
+                    speak("YouTube फोनमध्ये नाही");
+                }
+
+            } catch (Exception e) {
+
+                speak("YouTube उघडता आले नाही");
+            }
+
+            return true;
+        }
+
+        // CHROME
+        if (text.contains("chrome") ||
+                text.contains("क्रोम")) {
+
+            try {
+
+                Intent intent =
+                        getPackageManager()
+                                .getLaunchIntentForPackage(
+                                        "com.android.chrome"
+                                );
+
+                if (intent != null) {
+
+                    startActivity(intent);
+                    speak("Chrome उघडत आहे");
+
+                } else {
+
+                    speak("Chrome फोनमध्ये नाही");
+                }
+
+            } catch (Exception e) {
+
+                speak("Chrome उघडता आले नाही");
             }
 
             return true;
@@ -239,8 +288,7 @@ if (lower.contains("chrome")) {
                 "application/json; charset=UTF-8"
         );
 
-        JSONObject request =
-                new JSONObject();
+        JSONObject request = new JSONObject();
 
         request.put(
                 "message",
@@ -319,15 +367,12 @@ if (lower.contains("chrome")) {
 
         Intent intent =
                 new Intent(
-                        RecognizerIntent
-                                .ACTION_RECOGNIZE_SPEECH
+                        RecognizerIntent.ACTION_RECOGNIZE_SPEECH
                 );
 
         intent.putExtra(
-                RecognizerIntent
-                        .EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent
-                        .LANGUAGE_MODEL_FREE_FORM
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         );
 
         intent.putExtra(
@@ -434,6 +479,7 @@ if (lower.contains("chrome")) {
     protected void onDestroy() {
 
         if (tts != null) {
+
             tts.stop();
             tts.shutdown();
         }
