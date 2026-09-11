@@ -899,4 +899,5 @@ public class MainActivity extends Activity {
         Intent i =
                 new Intent(
                         RecognizerIntent
-                                .ACTION_RECOGNIZE_SP
+                                .ACTION_RECOGNIZE_SP 
+                    }
