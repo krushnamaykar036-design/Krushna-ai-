@@ -27,7 +27,15 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+@Override
+protected void onDestroy() {
+    if (tts != null) {
+        tts.stop();
+        tts.shutdown();
+    }
 
+    super.onDestroy();
+}
     TextView chat;
     EditText input;
     TextToSpeech tts;
@@ -497,12 +505,14 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        @Override
+protected void onDestroy() {
+    if (tts != null) {
+        tts.stop();
+        tts.shutdown();
+    }
 
-        if (tts != null) {
-            tts.stop();
-            tts.shutdown();}
+    super.onDestroy();
         }
 
-        super.onDestroy();
-    }
-            }
+        
