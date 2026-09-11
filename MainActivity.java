@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
@@ -56,6 +57,7 @@ public class MainActivity extends Activity {
         }
 
         tts = new TextToSpeech(this, status -> {
+
             if (status == TextToSpeech.SUCCESS) {
 
                 int result = tts.setLanguage(
@@ -87,20 +89,27 @@ public class MainActivity extends Activity {
             return;
         }
 
-        chat.append("You: " + message + "\n\n");
-        chat.append("Krushna AI: विचार करतोय...\n\n");
+        chat.append(
+                "You: " + message + "\n\n"
+        );
+
+        chat.append(
+                "Krushna AI: विचार करतोय...\n\n"
+        );
 
         new Thread(() -> {
 
             String answer;
 
             try {
+
                 answer = askServer(message);
 
                 if (answer == null ||
                         answer.trim().isEmpty()) {
 
-                    answer = "Server कडून उत्तर मिळाले नाही.";
+                    answer =
+                            "Server कडून उत्तर मिळाले नाही.";
                 }
 
             } catch (Exception e) {
@@ -267,6 +276,96 @@ public class MainActivity extends Activity {
             return true;
         }
 
+        // PHONE
+        if (text.contains("phone") ||
+                text.contains("फोन")) {
+
+            try {
+
+                Intent intent =
+                        new Intent(Intent.ACTION_DIAL);
+
+                startActivity(intent);
+
+                speak("Phone उघडत आहे");
+
+            } catch (Exception e) {
+
+                speak("Phone उघडता आला नाही");
+            }
+
+            return true;
+        }
+
+        // MESSAGES
+        if (text.contains("messages") ||
+                text.contains("message") ||
+                text.contains("sms") ||
+                text.contains("मेसेज") ||
+                text.contains("संदेश")) {
+
+            try {
+
+                Intent intent =
+                        new Intent(Intent.ACTION_MAIN);
+
+                intent.addCategory(
+                        Intent.CATEGORY_APP_MESSAGING
+                );
+
+                startActivity(intent);
+
+                speak("Messages उघडत आहे");
+
+            } catch (Exception e) {
+
+                speak("Messages उघडता आले नाही");
+            }
+
+            return true;
+        }
+
+        // GOOGLE MAPS
+        if (text.contains("maps") ||
+                text.contains("map") ||
+                text.contains("google maps") ||
+                text.contains("नकाशा")) {
+
+            try {
+
+                Intent intent =
+                        getPackageManager()
+                                .getLaunchIntentForPackage(
+                                        "com.google.android.apps.maps"
+                                );
+
+                if (intent != null) {
+
+                    startActivity(intent);
+                    speak("Google Maps उघडत आहे");
+
+                } else {
+
+                    Intent webIntent =
+                            new Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(
+                                            "https://www.google.com/maps"
+                                    )
+                            );
+
+                    startActivity(webIntent);
+                    speak("Maps उघडत आहे");
+                }
+
+            } catch (Exception e) {
+
+                speak("Maps उघडता आले नाही");
+            }
+
+            return true;
+        }
+
         return false;
     }
 
@@ -288,7 +387,8 @@ public class MainActivity extends Activity {
                 "application/json; charset=UTF-8"
         );
 
-        JSONObject request = new JSONObject();
+        JSONObject request =
+                new JSONObject();
 
         request.put(
                 "message",
