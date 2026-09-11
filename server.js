@@ -18,7 +18,6 @@ app.post("/chat", async (req, res) => {
       });
     }
 
-    // आत्ता सुरक्षित test reply
     res.json({
       reply: "Krushna AI ला तुमचा प्रश्न मिळाला: " + message
     });
