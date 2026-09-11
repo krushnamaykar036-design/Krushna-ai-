@@ -791,3 +791,14 @@ return result
                 ""
         )
         .trim();
+                    }
+
+    @Override
+    protected void onDestroy() {
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+        }
+        super.onDestroy();
+    }
+}
