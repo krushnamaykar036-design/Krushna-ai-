@@ -856,3 +856,153 @@ public class MainActivity extends Activity {
             requestPermissions(
                     new String[]{
                             Manifest
+                            // ================= VOICE =================
+
+    private void startVoice() {
+
+        if (checkSelfPermission(
+                Manifest.permission.RECORD_AUDIO
+        ) != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissions(
+                    new String[]{
+                            Manifest.permission.RECORD_AUDIO
+                    },
+                    MIC_PERMISSION
+            );
+
+            return;
+        }
+
+        try {
+
+            Intent intent =
+                    new Intent(
+                            RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+                    );
+
+            intent.putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            );
+
+            intent.putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE,
+                    "mr-IN"
+            );
+
+            intent.putExtra(
+                    RecognizerIntent.EXTRA_PROMPT,
+                    "Krushna AI ला बोला"
+            );
+
+            startActivityForResult(
+                    intent,
+                    VOICE
+            );
+
+        } catch (Exception e) {
+
+            speak(
+                    "Voice input उपलब्ध नाही"
+            );
+        }
+    }
+
+    @Override
+    protected void onActivityResult(
+            int requestCode,
+            int resultCode,
+            Intent data
+    ) {
+
+        super.onActivityResult(
+                requestCode,
+                resultCode,
+                data
+        );
+
+        if (requestCode == VOICE &&
+                resultCode == RESULT_OK &&
+                data != null) {
+
+            ArrayList<String> results =
+                    data.getStringArrayListExtra(
+                            RecognizerIntent.EXTRA_RESULTS
+                    );
+
+            if (results != null &&
+                    !results.isEmpty()) {
+
+                input.setText(
+                        results.get(0)
+                );
+
+                sendMessage();
+            }
+        }
+    }
+
+    // ================= PERMISSIONS =================
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults
+    ) {
+
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+        );
+
+        if (requestCode == MIC_PERMISSION &&
+                grantResults.length > 0 &&
+                grantResults[0] ==
+                        PackageManager.PERMISSION_GRANTED) {
+
+            startVoice();
+        }
+
+        if (requestCode == CONTACT_PERMISSION &&
+                grantResults.length > 0 &&
+                grantResults[0] ==
+                        PackageManager.PERMISSION_GRANTED) {
+
+            speak(
+                    "Contacts permission मिळाली"
+            );
+        }
+    }
+
+    // ================= VOICE REPLY =================
+
+    private void speak(String text) {
+
+        if (tts != null) {
+
+            tts.speak(
+                    text,
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "krushna_ai"
+            );
+        }
+    }
+
+    // ================= DESTROY =================
+
+    @Override
+    protected void onDestroy() {
+
+        if (tts != null) {
+
+            tts.stop();
+            tts.shutdown();
+        }
+
+        super.onDestroy();
+    }
+}
