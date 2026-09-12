@@ -3,36 +3,23 @@ package com.example.aiassistant;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
-import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
+import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -40,169 +27,78 @@ public class MainActivity extends Activity {
     private EditText input;
     private TextView chat;
     private TextView status;
-    private Button mic;
-    private Button send;
+    private TextToSpeech tts;
 
-    private SpeechRecognizer speechRecognizer;
-    private TextToSpeech textToSpeech;
-    private EdgeGlowView edgeGlow;
-
-    private static final int MIC_PERMISSION = 100;
-    private static final int CONTACT_PERMISSION = 101;
-
-    private static final String SERVER_URL =
-            "https://krushna-ai-hseh.onrender.com/chat";
+    private static final int SPEECH_REQUEST = 100;
+    private static final int CONTACT_REQUEST = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        int layoutId = getResources().getIdentifier(
-                "activity_main", "layout", getPackageName());
-
-        setContentView(layoutId);
-
-        input = findViewById(getResources().getIdentifier(
-                "input", "id", getPackageName()));
-
-        chat = findViewById(getResources().getIdentifier(
-                "chat", "id", getPackageName()));
-
-        status = findViewById(getResources().getIdentifier(
-                "status", "id", getPackageName()));
-
-        mic = findViewById(getResources().getIdentifier(
-                "mic", "id", getPackageName()));
-
-        send = findViewById(getResources().getIdentifier(
-                "send", "id", getPackageName()));
-
-        edgeGlow = new EdgeGlowView(this);
-
-        addContentView(
-                edgeGlow,
-                new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
+        setContentView(
+                getResources().getIdentifier(
+                        "activity_main",
+                        "layout",
+                        getPackageName()
                 )
         );
 
-        edgeGlow.setVisibility(View.GONE);
-
-        textToSpeech = new TextToSpeech(this, result -> {
-            if (result == TextToSpeech.SUCCESS) {
-                textToSpeech.setLanguage(new Locale("mr", "IN"));
-            }
-        });
-
-        mic.setOnClickListener(v -> startVoice());
-
-        send.setOnClickListener(v -> {
-            String message = input.getText().toString().trim();
-
-            if (!message.isEmpty()) {
-                input.setText("");
-                processCommand(message);
-            }
-        });
-
-        if (status != null) {
-            status.setText("Ready");
-        }
-    }
-
-    private void startVoice() {
-
-        if (checkSelfPermission(
-                Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            requestPermissions(
-                    new String[]{Manifest.permission.RECORD_AUDIO},
-                    MIC_PERMISSION
-            );
-            return;
-        }
-
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            speak("Voice recognition उपलब्ध नाही.");
-            return;
-        }
-
-        if (speechRecognizer != null) {
-            speechRecognizer.destroy();
-        }
-
-        edgeGlow.setVisibility(View.VISIBLE);
-        edgeGlow.startGlow();
-
-        if (status != null) {
-            status.setText("Listening...");
-        }
-
-        speechRecognizer =
-                SpeechRecognizer.createSpeechRecognizer(this);
-
-        speechRecognizer.setRecognitionListener(
-                new RecognitionListener() {
-
-                    @Override public void onReadyForSpeech(Bundle b) {}
-
-                    @Override public void onBeginningOfSpeech() {
-                        if (status != null) {
-                            status.setText("Listening...");
-                        }
-                    }
-
-                    @Override public void onRmsChanged(float rms) {}
-
-                    @Override public void onBufferReceived(byte[] b) {}
-
-                    @Override public void onEndOfSpeech() {}
-
-                    @Override public void onError(int error) {
-                        stopEdgeGlow();
-
-                        if (status != null) {
-                            status.setText("Ready");
-                        }
-
-                        speak("पुन्हा बोला.");
-                    }
-
-                    @Override public void onResults(Bundle results) {
-
-                        stopEdgeGlow();
-
-                        if (status != null) {
-                            status.setText("Ready");
-                        }
-
-                        ArrayList<String> matches =
-                                results.getStringArrayList(
-                                        SpeechRecognizer.RESULTS_RECOGNITION
-                                );
-
-                        if (matches != null &&
-                                !matches.isEmpty()) {
-
-                            String command = matches.get(0);
-
-                            input.setText(command);
-
-                            processCommand(command);
-                        }
-                    }
-
-                    @Override public void onPartialResults(Bundle b) {}
-
-                    @Override public void onEvent(
-                            int eventType, Bundle params) {}
-                }
+        input = findViewById(
+                getResources().getIdentifier(
+                        "input", "id", getPackageName()
+                )
         );
 
-        Intent intent =
-                new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        chat = findViewById(
+                getResources().getIdentifier(
+                        "chat", "id", getPackageName()
+                )
+        );
+
+        status = findViewById(
+                getResources().getIdentifier(
+                        "status", "id", getPackageName()
+                )
+        );
+
+        Button mic = findViewById(
+                getResources().getIdentifier(
+                        "mic", "id", getPackageName()
+                )
+        );
+
+        Button send = findViewById(
+                getResources().getIdentifier(
+                        "send", "id", getPackageName()
+                )
+        );
+
+        tts = new TextToSpeech(this, result -> {
+            if (result == TextToSpeech.SUCCESS) {
+                tts.setLanguage(new Locale("mr", "IN"));
+            }
+        });
+
+        if (mic != null) {
+            mic.setOnClickListener(v -> {
+                showOrangeGlow(true);
+                startVoiceInput();
+            });
+        }
+
+        if (send != null) {
+            send.setOnClickListener(v -> sendMessage());
+        }
+
+        setStatus("Ready");
+    }
+
+    private void startVoiceInput() {
+
+        Intent intent = new Intent(
+                RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+        );
 
         intent.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -215,1466 +111,531 @@ public class MainActivity extends Activity {
         );
 
         intent.putExtra(
-                RecognizerIntent.EXTRA_PARTIAL_RESULTS,
-                false
-        );
-
-        try {
-            speechRecognizer.startListening(intent);
-        } catch (Exception e) {
-            stopEdgeGlow();
-            speak("Mic सुरू करता आला नाही.");
-        }
-    }
-
-    private void stopEdgeGlow() {
-        if (edgeGlow != null) {
-            edgeGlow.stopGlow();
-            edgeGlow.setVisibility(View.GONE);
-        }
-    }
-
-    private void processCommand(String command) {
-
-        if (command == null) return;
-
-        command = command.trim();
-
-        addChat("You: " + command);
-
-        String lower = command.toLowerCase(Locale.ROOT);
-
-        if (containsAny(lower,
-                "camera", "open camera", "कॅमेरा", "कैमरा")) {
-            openCamera();
-            return;
-        }
-
-        if (containsAny(lower,
-                "call", "phone",
-                "फोन कर", "फोन लाव",
-                "कॉल कर", "कॉल लाव",
-                "फोन करा", "कॉल करा")) {
-
-            callContactFromCommand(command);
-            return;
-        }
-
-        if (containsAny(lower,
-                "contact", "contacts",
-                "कॉन्टॅक्ट", "कॉन्टॅक्ट्स",
-                "नंबर")) {
-
-            openContacts();
-            return;
-        }
-
-        if (containsAny(lower,
-                "settings", "setting",
-                "सेटिंग", "सेटिंग्स")) {
-
-            try {
-                startActivity(new Intent(
-                        android.provider.Settings.ACTION_SETTINGS));
-                speak("Settings उघडले.");
-            } catch (Exception e) {
-                speak("Settings उघडता आले नाही.");
-            }
-            return;
-        }
-
-        if (containsAny(lower, "home", "होम")) {
-
-            Intent home = new Intent(Intent.ACTION_MAIN);
-            home.addCategory(Intent.CATEGORY_HOME);
-            home.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(home);
-            return;
-        }
-
-        if (containsAny(lower,
-                "open", "उघड", "उघडा",
-                "ओपन", "चालू कर", "चालू करा",
-                "खोल")) {
-
-            String appName = extractAppName(command);
-
-            if (!appName.isEmpty()) {
-
-                if (openInstalledApp(appName)) {
-                    speak(appName + " उघडले.");
-                } else {
-                    speak(appName + " app सापडले नाही.");
-                }
-
-                return;
-            }
-        }
-
-        if (looksLikeAppCommand(command)) {
-
-            if (openInstalledApp(command)) {
-                speak(command + " उघडले.");
-                return;
-            }
-        }
-
-        askServer(command);
-    }
-
-    private void openCamera() {
-
-        try {
-            Intent camera =
-                    new Intent(
-                            android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-
-            startActivity(camera);
-
-            speak("Camera उघडला.");
-
-        } catch (Exception e) {
-            speak("Camera उघडता आला नाही.");
-        }
-    }
-
-    private void callContactFromCommand(String command) {
-
-        if (checkSelfPermission(
-                Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            requestPermissions(
-                    new String[]{Manifest.permission.READ_CONTACTS},
-                    CONTACT_PERMISSION
-            );
-
-            Toast.makeText(
-                    this,
-                    "Contacts permission द्या.",
-                    Toast.LENGTH_SHORT
-            ).show();
-
-            return;
-        }
-
-        String contactName =
-                extractContactName(command);
-
-        if (contactName.isEmpty()) {
-            speak("कुणाला call करायचा ते सांगा.");
-            return;
-        }
-
-        findAndDialContact(contactName);
-    }
-
-    private String extractContactName(String command) {
-
-        String name = command.toLowerCase(Locale.ROOT);
-
-        String[] words = {
-                "hello", "krushna", "krishna",
-                "call", "phone",
-                "फोन", "कॉल",
-                "कॉल कर", "कॉल करा", "कॉल लाव",
-                "फोन कर", "फोन करा", "फोन लाव",
-                "ला", "को", "कर", "करा",
-                "please", "pls"
-        };
-
-        for (String word : words) {
-            name = name.replace(word, " ");
-        }
-
-        return name.replaceAll("\\s+", " ").trim();
-    }
-
-    private void findAndDialContact(String wantedName) {
-
-        Cursor cursor = null;
-
-        try {
-
-            cursor = getContentResolver().query(
-                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                    new String[]{
-                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                            ContactsContract.CommonDataKinds.Phone.NUMBER
-                    },
-                    null,
-                    null,
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
-            );
-
-            if (cursor == null) {
-                speak("Contacts सापडले नाहीत.");
-                return;
-            }
-
-            String wanted =
-                    normalizeContactName(wantedName);
-
-            while (cursor.moveToNext()) {
-
-                String displayName =
-                        cursor.getString(
-                                cursor.getColumnIndexOrThrow(
-                                        ContactsContract
-                                                .CommonDataKinds
-                                                .Phone
-                                                .DISPLAY_NAME
-                                )
-                        );
-
-                String phone =
-                        cursor.getString(
-                                cursor.getColumnIndexOrThrow(
-                                        ContactsContract
-                                                .CommonDataKinds
-                                                .Phone
-                                                .NUMBER
-                                )
-                        );
-
-                String savedName =
-                        normalizeContactName(displayName);
-
-                boolean match =
-                        savedName.equals(wanted)
-                        || savedName.contains(wanted)
-                        || wanted.contains(savedName)
-                        || devanagariMatches(
-                                displayName,
-                                wantedName
-                        );
-
-                if (match) {
-
-                    addChat(
-                            "Krushna AI: " +
-                            displayName +
-                            " contact सापडला."
-                    );
-
-                    speak(
-                            displayName +
-                            " सापडला. Dialer उघडतो."
-                    );
-
-                    openDialer(phone);
-
-                    return;
-                }
-            }
-
-            speak(
-                    wantedName +
-                    " contact सापडला नाही."
-            );
-
-        } catch (Exception e) {
-
-            speak(
-                    "Contact शोधताना error आला."
-            );
-
-        } finally {
-
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-    }
-
-    private String normalizeContactName(String text) {
-
-        if (text == null) {
-            return "";
-        }
-
-        text = text.toLowerCase(Locale.ROOT);
-
-        String[] words = {
-                "ला", "कॉल", "फोन",
-                "कर", "करा",
-                "call", "phone",
-                "to", "please"
-        };
-
-        for (String word : words) {
-            text = text.replace(word, " ");
-        }
-
-        text = text.replaceAll(
-                "[^\\p{L}\\p{N}]",
-                " "
-        );
-
-        return text.replaceAll(
-                "\\s+",
-                " "
-        ).trim();
-    }
-
-    private void openDialer(String phone) {
-
-        try {
-
-            Intent dial =
-                    new Intent(Intent.ACTION_DIAL);
-
-            dial.setData(
-                    Uri.parse(
-                            "tel:" +
-                            Uri.encode(phone)
-                    )
-            );
-
-            startActivity(dial);
-
-        } catch (Exception e) {
-            speak("Dialer उघडता आला नाही.");
-        }
-    }
-
-    private void openContacts() {
-
-        try {
-
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_VIEW,
-                            ContactsContract.Contacts.CONTENT_URI
-                    );
-
-            startActivity(intent);
-
-            speak("Contacts उघडले.");
-
-        } catch (Exception e) {
-            speak("Contacts उघडता आले नाही.");
-        }
-    }
-
-    private boolean openInstalledApp(String requestedName) {
-
-        PackageManager pm = getPackageManager();
-
-        List<ApplicationInfo> apps =
-                pm.getInstalledApplications(
-                        PackageManager.GET_META_DATA
-                );
-
-        String wanted =
-                normalizeText(requestedName);
-
-        for (ApplicationInfo app : apps) {
-
-            Intent launch =
-                    pm.getLaunchIntentForPackage(
-                            app.packageName
-                    );
-
-            if (launch == null) {
-                continue;
-            }
-
-            String label =
-                    app.loadLabel(pm).toString();
-
-            String normalizedLabel =
-                    normalizeText(label);
-
-            if (normalizedLabel.equals(wanted)
-                    || normalizedLabel.contains(wanted)
-                    || wanted.contains(normalizedLabel)) {
-
-                launch.addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK
-                );
-
-                startActivity(launch);
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private String extractAppName(String command) {
-
-        String name = command;
-
-        String[] words = {
-                "hello", "krushna", "krishna",
-                "open", "ओपन",
-                "उघड", "उघडा",
-                "चालू कर", "चालू करा",
-                "खोल"
-        };
-
-        for (String word : words) {
-            name = name.replace(word, " ");
-        }
-
-        return name.replaceAll(
-                "\\s+",
-                " "
-        ).trim();
-    }
-
-    private boolean looksLikeAppCommand(String command) {
-
-        String lower =
-                command.toLowerCase(Locale.ROOT);
-
-        return lower.contains("instagram")
-                || lower.contains("whatsapp")
-                || lower.contains("youtube")
-                || lower.contains("facebook")
-                || lower.contains("chrome")
-                || lower.contains("gmail")
-                || lower.contains("telegram")
-                || lower.contains("spotify")
-                || lower.contains("camera")
-                || lower.contains("maps");
-    }
-
-    private String normalizeText(String text) {
-
-        if (text == null) return "";
-
-        text = text.toLowerCase(Locale.ROOT);
-
-        text = Normalizer.normalize(
-                text,
-                Normalizer.Form.NFD
-        );
-
-        text = text.replaceAll(
-                "\\p{M}",
-                ""
-        );
-
-        text = text.replaceAll(
-                "[^\\p{L}\\p{N}]",
-                ""
-        );
-
-        return text.trim();
-    }
-
-    private boolean devanagariMatches(
-            String contact,
-            String spoken) {
-
-        if (contact == null || spoken == null) {
-            return false;
-        }
-
-        try {
-
-            if (android.os.Build.VERSION.SDK_INT >= 24) {
-
-                android.icu.text.Transliterator trans =
-                        android.icu.text.Transliterator
-                                .getInstance(
-                                        "Devanagari-Latin; Latin-ASCII"
-                                );
-
-                String c =
-                        normalizeText(
-                                trans.transliterate(contact)
-                        );
-
-                String s =
-                        normalizeText(
-                                trans.transliterate(spoken)
-                        );
-
-                return c.contains(s)
-                        || s.contains(c);
-            }
-
-        } catch (Exception ignored) {
-        }
-
-        return false;
-    }
-
-    private void askServer(String message) {
-
-        speak("थोडं थांबा.");
-
-        new Thread(() -> {
-
-            HttpURLConnection connection = null;
-
-            try {
-
-                URL url =
-                        new URL(SERVER_URL);
-
-                connection =
-                        (HttpURLConnection)
-                                url.openConnection();
-
-                connection.setRequestMethod("POST");
-                connection.setConnectTimeout(15000);
-                connection.setReadTimeout(30000);
-                connection.setDoOutput(true);
-
-                connection.package com.example.aiassistant;
-
-import android.Manifest;
-import android.app.Activity;
-import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.net.Uri;
-import android.os.Bundle;
-import android.provider.ContactsContract;
-import android.speech.RecognitionListener;
-import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
-import android.speech.tts.TextToSpeech;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.text.Normalizer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
-public class MainActivity extends Activity {
-
-    private EditText input;
-    private TextView chat;
-    private TextView status;
-    private Button mic;
-    private Button send;
-
-    private SpeechRecognizer speechRecognizer;
-    private TextToSpeech textToSpeech;
-    private EdgeGlowView edgeGlow;
-
-    private static final int MIC_PERMISSION = 100;
-    private static final int CONTACT_PERMISSION = 101;
-
-    private static final String SERVER_URL =
-            "https://krushna-ai-hseh.onrender.com/chat";
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        int layoutId = getResources().getIdentifier(
-                "activity_main", "layout", getPackageName());
-
-        setContentView(layoutId);
-
-        input = findViewById(getResources().getIdentifier(
-                "input", "id", getPackageName()));
-
-        chat = findViewById(getResources().getIdentifier(
-                "chat", "id", getPackageName()));
-
-        status = findViewById(getResources().getIdentifier(
-                "status", "id", getPackageName()));
-
-        mic = findViewById(getResources().getIdentifier(
-                "mic", "id", getPackageName()));
-
-        send = findViewById(getResources().getIdentifier(
-                "send", "id", getPackageName()));
-
-        edgeGlow = new EdgeGlowView(this);
-
-        addContentView(
-                edgeGlow,
-                new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                )
-        );
-
-        edgeGlow.setVisibility(View.GONE);
-
-        textToSpeech = new TextToSpeech(this, result -> {
-            if (result == TextToSpeech.SUCCESS) {
-                textToSpeech.setLanguage(new Locale("mr", "IN"));
-            }
-        });
-
-        mic.setOnClickListener(v -> startVoice());
-
-        send.setOnClickListener(v -> {
-            String message = input.getText().toString().trim();
-
-            if (!message.isEmpty()) {
-                input.setText("");
-                processCommand(message);
-            }
-        });
-
-        if (status != null) {
-            status.setText("Ready");
-        }
-    }
-
-    private void startVoice() {
-
-        if (checkSelfPermission(
-                Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            requestPermissions(
-                    new String[]{Manifest.permission.RECORD_AUDIO},
-                    MIC_PERMISSION
-            );
-            return;
-        }
-
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            speak("Voice recognition उपलब्ध नाही.");
-            return;
-        }
-
-        if (speechRecognizer != null) {
-            speechRecognizer.destroy();
-        }
-
-        edgeGlow.setVisibility(View.VISIBLE);
-        edgeGlow.startGlow();
-
-        if (status != null) {
-            status.setText("Listening...");
-        }
-
-        speechRecognizer =
-                SpeechRecognizer.createSpeechRecognizer(this);
-
-        speechRecognizer.setRecognitionListener(
-                new RecognitionListener() {
-
-                    @Override public void onReadyForSpeech(Bundle b) {}
-
-                    @Override public void onBeginningOfSpeech() {
-                        if (status != null) {
-                            status.setText("Listening...");
-                        }
-                    }
-
-                    @Override public void onRmsChanged(float rms) {}
-
-                    @Override public void onBufferReceived(byte[] b) {}
-
-                    @Override public void onEndOfSpeech() {}
-
-                    @Override public void onError(int error) {
-                        stopEdgeGlow();
-
-                        if (status != null) {
-                            status.setText("Ready");
-                        }
-
-                        speak("पुन्हा बोला.");
-                    }
-
-                    @Override public void onResults(Bundle results) {
-
-                        stopEdgeGlow();
-
-                        if (status != null) {
-                            status.setText("Ready");
-                        }
-
-                        ArrayList<String> matches =
-                                results.getStringArrayList(
-                                        SpeechRecognizer.RESULTS_RECOGNITION
-                                );
-
-                        if (matches != null &&
-                                !matches.isEmpty()) {
-
-                            String command = matches.get(0);
-
-                            input.setText(command);
-
-                            processCommand(command);
-                        }
-                    }
-
-                    @Override public void onPartialResults(Bundle b) {}
-
-                    @Override public void onEvent(
-                            int eventType, Bundle params) {}
-                }
-        );
-
-        Intent intent =
-                new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-
-        intent.putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-        );
-
-        intent.putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE,
+                RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,
                 "mr-IN"
         );
 
         intent.putExtra(
-                RecognizerIntent.EXTRA_PARTIAL_RESULTS,
-                false
+                RecognizerIntent.EXTRA_PROMPT,
+                "Krushna AI ला बोला"
         );
 
         try {
-            speechRecognizer.startListening(intent);
+            startActivityForResult(intent, SPEECH_REQUEST);
+            setStatus("Listening...");
         } catch (Exception e) {
-            stopEdgeGlow();
-            speak("Mic सुरू करता आला नाही.");
+            showOrangeGlow(false);
+            setStatus("Voice unavailable");
+            speak("Voice recognition उपलब्ध नाही.");
         }
     }
 
-    private void stopEdgeGlow() {
-        if (edgeGlow != null) {
-            edgeGlow.stopGlow();
-            edgeGlow.setVisibility(View.GONE);
+    @Override
+    protected void onActivityResult(
+            int requestCode,
+            int resultCode,
+            Intent data
+    ) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        showOrangeGlow(false);
+
+        if (requestCode == SPEECH_REQUEST
+                && resultCode == RESULT_OK
+                && data != null) {
+
+            ArrayList<String> results =
+                    data.getStringArrayListExtra(
+                            RecognizerIntent.EXTRA_RESULTS
+                    );
+
+            if (results != null && !results.isEmpty()) {
+                String command = results.get(0);
+
+                input.setText(command);
+                handleCommand(command);
+            }
         }
     }
 
-    private void processCommand(String command) {
+    private void sendMessage() {
 
-        if (command == null) return;
+        if (input == null) return;
 
-        command = command.trim();
+        String message = input.getText().toString().trim();
+
+        if (message.isEmpty()) return;
+
+        handleCommand(message);
+    }
+
+    private void handleCommand(String command) {
 
         addChat("You: " + command);
 
         String lower = command.toLowerCase(Locale.ROOT);
 
-        if (containsAny(lower,
-                "camera", "open camera", "कॅमेरा", "कैमरा")) {
-            openCamera();
-            return;
-        }
+        if (isCallCommand(lower, command)) {
+            String name = extractContactName(command);
 
-        if (containsAny(lower,
-                "call", "phone",
-                "फोन कर", "फोन लाव",
-                "कॉल कर", "कॉल लाव",
-                "फोन करा", "कॉल करा")) {
-
-            callContactFromCommand(command);
-            return;
-        }
-
-        if (containsAny(lower,
-                "contact", "contacts",
-                "कॉन्टॅक्ट", "कॉन्टॅक्ट्स",
-                "नंबर")) {
-
-            openContacts();
-            return;
-        }
-
-        if (containsAny(lower,
-                "settings", "setting",
-                "सेटिंग", "सेटिंग्स")) {
-
-            try {
-                startActivity(new Intent(
-                        android.provider.Settings.ACTION_SETTINGS));
-                speak("Settings उघडले.");
-            } catch (Exception e) {
-                speak("Settings उघडता आले नाही.");
-            }
-            return;
-        }
-
-        if (containsAny(lower, "home", "होम")) {
-
-            Intent home = new Intent(Intent.ACTION_MAIN);
-            home.addCategory(Intent.CATEGORY_HOME);
-            home.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(home);
-            return;
-        }
-
-        if (containsAny(lower,
-                "open", "उघड", "उघडा",
-                "ओपन", "चालू कर", "चालू करा",
-                "खोल")) {
-
-            String appName = extractAppName(command);
-
-            if (!appName.isEmpty()) {
-
-                if (openInstalledApp(appName)) {
-                    speak(appName + " उघडले.");
-                } else {
-                    speak(appName + " app सापडले नाही.");
-                }
-
+            if (name.isEmpty()) {
+                speak("कोणाला call करायचा?");
                 return;
             }
+
+            callContact(name);
+            return;
         }
 
-        if (looksLikeAppCommand(command)) {
+        if (lower.contains("hello krushna")
+                || lower.contains("hello krishna")
+                || command.contains("हॅलो कृष्णा")
+                || command.contains("हॅलो क्रुष्णा")) {
 
-            if (openInstalledApp(command)) {
-                speak(command + " उघडले.");
-                return;
-            }
+            reply("हो, बोला.");
+            return;
         }
 
         askServer(command);
     }
 
-    private void openCamera() {
+    private boolean isCallCommand(
+            String lower,
+            String original
+    ) {
 
-        try {
-            Intent camera =
-                    new Intent(
-                            android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-
-            startActivity(camera);
-
-            speak("Camera उघडला.");
-
-        } catch (Exception e) {
-            speak("Camera उघडता आला नाही.");
-        }
-    }
-
-    private void callContactFromCommand(String command) {
-
-        if (checkSelfPermission(
-                Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            requestPermissions(
-                    new String[]{Manifest.permission.READ_CONTACTS},
-                    CONTACT_PERMISSION
-            );
-
-            Toast.makeText(
-                    this,
-                    "Contacts permission द्या.",
-                    Toast.LENGTH_SHORT
-            ).show();
-
-            return;
-        }
-
-        String contactName =
-                extractContactName(command);
-
-        if (contactName.isEmpty()) {
-            speak("कुणाला call करायचा ते सांगा.");
-            return;
-        }
-
-        findAndDialContact(contactName);
+        return lower.contains("call")
+                || lower.contains("phone")
+                || original.contains("कॉल")
+                || original.contains("फोन")
+                || original.contains("ला कॉल")
+                || original.contains("ला फोन");
     }
 
     private String extractContactName(String command) {
 
-        String name = command.toLowerCase(Locale.ROOT);
-
-        String[] words = {
-                "hello", "krushna", "krishna",
-                "call", "phone",
-                "फोन", "कॉल",
-                "कॉल कर", "कॉल करा", "कॉल लाव",
-                "फोन कर", "फोन करा", "फोन लाव",
-                "ला", "को", "कर", "करा",
-                "please", "pls"
-        };
-
-        for (String word : words) {
-            name = name.replace(word, " ");
-        }
-
-        return name.replaceAll("\\s+", " ").trim();
-    }
-
-    private void findAndDialContact(String wantedName) {
-
-        Cursor cursor = null;
-
-        try {
-
-            cursor = getContentResolver().query(
-                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                    new String[]{
-                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                            ContactsContract.CommonDataKinds.Phone.NUMBER
-                    },
-                    null,
-                    null,
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
-            );
-
-            if (cursor == null) {
-                speak("Contacts सापडले नाहीत.");
-                return;
-            }
-
-            String wanted =
-                    normalizeContactName(wantedName);
-
-            while (cursor.moveToNext()) {
-
-                String displayName =
-                        cursor.getString(
-                                cursor.getColumnIndexOrThrow(
-                                        ContactsContract
-                                                .CommonDataKinds
-                                                .Phone
-                                                .DISPLAY_NAME
-                                )
-                        );
-
-                String phone =
-                        cursor.getString(
-                                cursor.getColumnIndexOrThrow(
-                                        ContactsContract
-                                                .CommonDataKinds
-                                                .Phone
-                                                .NUMBER
-                                )
-                        );
-
-                String savedName =
-                        normalizeContactName(displayName);
-
-                boolean match =
-                        savedName.equals(wanted)
-                        || savedName.contains(wanted)
-                        || wanted.contains(savedName)
-                        || devanagariMatches(
-                                displayName,
-                                wantedName
-                        );
-
-                if (match) {
-
-                    addChat(
-                            "Krushna AI: " +
-                            displayName +
-                            " contact सापडला."
-                    );
-
-                    speak(
-                            displayName +
-                            " सापडला. Dialer उघडतो."
-                    );
-
-                    openDialer(phone);
-
-                    return;
-                }
-            }
-
-            speak(
-                    wantedName +
-                    " contact सापडला नाही."
-            );
-
-        } catch (Exception e) {
-
-            speak(
-                    "Contact शोधताना error आला."
-            );
-
-        } finally {
-
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-    }
-
-    private String normalizeContactName(String text) {
-
-        if (text == null) {
-            return "";
-        }
-
-        text = text.toLowerCase(Locale.ROOT);
-
-        String[] words = {
-                "ला", "कॉल", "फोन",
-                "कर", "करा",
-                "call", "phone",
-                "to", "please"
-        };
-
-        for (String word : words) {
-            text = text.replace(word, " ");
-        }
-
-        text = text.replaceAll(
-                "[^\\p{L}\\p{N}]",
-                " "
-        );
-
-        return text.replaceAll(
-                "\\s+",
-                " "
-        ).trim();
-    }
-
-    private void openDialer(String phone) {
-
-        try {
-
-            Intent dial =
-                    new Intent(Intent.ACTION_DIAL);
-
-            dial.setData(
-                    Uri.parse(
-                            "tel:" +
-                            Uri.encode(phone)
-                    )
-            );
-
-            startActivity(dial);
-
-        } catch (Exception e) {
-            speak("Dialer उघडता आला नाही.");
-        }
-    }
-
-    private void openContacts() {
-
-        try {
-
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_VIEW,
-                            ContactsContract.Contacts.CONTENT_URI
-                    );
-
-            startActivity(intent);
-
-            speak("Contacts उघडले.");
-
-        } catch (Exception e) {
-            speak("Contacts उघडता आले नाही.");
-        }
-    }
-
-    private boolean openInstalledApp(String requestedName) {
-
-        PackageManager pm = getPackageManager();
-
-        List<ApplicationInfo> apps =
-                pm.getInstalledApplications(
-                        PackageManager.GET_META_DATA
-                );
-
-        String wanted =
-                normalizeText(requestedName);
-
-        for (ApplicationInfo app : apps) {
-
-            Intent launch =
-                    pm.getLaunchIntentForPackage(
-                            app.packageName
-                    );
-
-            if (launch == null) {
-                continue;
-            }
-
-            String label =
-                    app.loadLabel(pm).toString();
-
-            String normalizedLabel =
-                    normalizeText(label);
-
-            if (normalizedLabel.equals(wanted)
-                    || normalizedLabel.contains(wanted)
-                    || wanted.contains(normalizedLabel)) {
-
-                launch.addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK
-                );
-
-                startActivity(launch);
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private String extractAppName(String command) {
-
         String name = command;
 
-        String[] words = {
-                "hello", "krushna", "krishna",
-                "open", "ओपन",
-                "उघड", "उघडा",
-                "चालू कर", "चालू करा",
-                "खोल"
+        String[] removeWords = {
+                "call",
+                "phone",
+                "कर",
+                "करा",
+                "करायचा",
+                "करायचाय",
+                "लाव",
+                "लावा",
+                "ला",
+                "वर",
+                "फोन",
+                "कॉल",
+                "नंबर",
+                "number",
+                "please",
+                "pls",
+                "कृपया",
+                "मला",
+                "मी",
+                "तू",
+                "करायचा आहे"
         };
 
-        for (String word : words) {
-            name = name.replace(word, " ");
+        for (String word : removeWords) {
+            name = name.replace(
+                    word,
+                    " "
+            );
         }
 
-        return name.replaceAll(
-                "\\s+",
-                " "
-        ).trim();
+        name = name
+                .replace("  ", " ")
+                .trim();
+
+        return name;
     }
 
-    private boolean looksLikeAppCommand(String command) {
+    private void callContact(String spokenName) {
 
-        String lower =
-                command.toLowerCase(Locale.ROOT);
+        if (checkSelfPermission(
+                Manifest.permission.READ_CONTACTS
+        ) != PackageManager.PERMISSION_GRANTED) {
 
-        return lower.contains("instagram")
-                || lower.contains("whatsapp")
-                || lower.contains("youtube")
-                || lower.contains("facebook")
-                || lower.contains("chrome")
-                || lower.contains("gmail")
-                || lower.contains("telegram")
-                || lower.contains("spotify")
-                || lower.contains("camera")
-                || lower.contains("maps");
+            requestPermissions(
+                    new String[]{
+                            Manifest.permission.READ_CONTACTS,
+                            Manifest.permission.CALL_PHONE
+                    },
+                    CONTACT_REQUEST
+            );
+
+            setStatus("Contacts permission required");
+            return;
+        }
+
+        Cursor cursor = getContentResolver().query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                new String[]{
+                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                        ContactsContract.CommonDataKinds.Phone.NUMBER
+                },
+                null,
+                null,
+                null
+        );
+
+        if (cursor == null) {
+            reply("Contacts मिळाले नाहीत.");
+            return;
+        }
+
+        String bestName = null;
+        String bestNumber = null;
+
+        while (cursor.moveToNext()) {
+
+            String contactName =
+                    cursor.getString(0);
+
+            String number =
+                    cursor.getString(1);
+
+            if (contactMatches(
+                    spokenName,
+                    contactName
+            )) {
+
+                bestName = contactName;
+                bestNumber = number;
+                break;
+            }
+        }
+
+        cursor.close();
+
+        if (bestNumber == null) {
+
+            reply(
+                    "मला " +
+                    spokenName +
+                    " नावाचा contact सापडला नाही."
+            );
+
+            return;
+        }
+
+        if (checkSelfPermission(
+                Manifest.permission.CALL_PHONE
+        ) != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissions(
+                    new String[]{
+                            Manifest.permission.CALL_PHONE
+                    },
+                    CONTACT_REQUEST
+            );
+
+            return;
+        }
+
+        try {
+
+            Intent callIntent =
+                    new Intent(
+                            Intent.ACTION_CALL,
+                            Uri.parse("tel:" + bestNumber)
+                    );
+
+            startActivity(callIntent);
+
+            reply(
+                    bestName +
+                    " ला call करत आहे."
+            );
+
+        } catch (Exception e) {
+
+            reply("Call करता आला नाही.");
+        }
     }
 
-    private String normalizeText(String text) {
+    private boolean contactMatches(
+            String spoken,
+            String saved
+    ) {
 
-        if (text == null) return "";
+        String a = normalize(spoken);
+        String b = normalize(saved);
 
-        text = text.toLowerCase(Locale.ROOT);
-
-        text = Normalizer.normalize(
-                text,
-                Normalizer.Form.NFD
-        );
-
-        text = text.replaceAll(
-                "\\p{M}",
-                ""
-        );
-
-        text = text.replaceAll(
-                "[^\\p{L}\\p{N}]",
-                ""
-        );
-
-        return text.trim();
-    }
-
-    private boolean devanagariMatches(
-            String contact,
-            String spoken) {
-
-        if (contact == null || spoken == null) {
+        if (a.isEmpty() || b.isEmpty()) {
             return false;
         }
 
-        try {
-
-            if (android.os.Build.VERSION.SDK_INT >= 24) {
-
-                android.icu.text.Transliterator trans =
-                        android.icu.text.Transliterator
-                                .getInstance(
-                                        "Devanagari-Latin; Latin-ASCII"
-                                );
-
-                String c =
-                        normalizeText(
-                                trans.transliterate(contact)
-                        );
-
-                String s =
-                        normalizeText(
-                                trans.transliterate(spoken)
-                        );
-
-                return c.contains(s)
-                        || s.contains(c);
-            }
-
-        } catch (Exception ignored) {
+        if (a.equals(b)) {
+            return true;
         }
 
-        return false;
+        if (a.contains(b) || b.contains(a)) {
+            return true;
+        }
+
+        String aSkeleton =
+                consonantSkeleton(a);
+
+        String bSkeleton =
+                consonantSkeleton(b);
+
+        if (!aSkeleton.isEmpty()
+                && aSkeleton.equals(bSkeleton)) {
+            return true;
+        }
+
+        return similarity(a, b) >= 0.65;
+    }
+
+    private String normalize(String text) {
+
+        String value = text
+                .toLowerCase(Locale.ROOT)
+                .trim();
+
+        value = devanagariToLatin(value);
+
+        value = value
+                .replaceAll("[^a-z0-9]", "");
+
+        while (value.endsWith("aa")) {
+            value = value.substring(
+                    0,
+                    value.length() - 1
+            );
+        }
+
+        if (value.endsWith("a")
+                && value.length() > 4) {
+
+            value = value.substring(
+                    0,
+                    value.length() - 1
+            );
+        }
+
+        return value;
+    }
+
+    private String devanagariToLatin(String text) {
+
+        String value = text;
+
+        String[] mr = {
+                "अ","आ","इ","ई","उ","ऊ","ए","ऐ","ओ","औ",
+                "क","ख","ग","घ","च","छ","ज","झ",
+                "ट","ठ","ड","ढ","ण",
+                "त","थ","द","ध","न",
+                "प","फ","ब","भ","म",
+                "य","र","ल","व",
+                "श","ष","स","ह",
+                "ं","ः","्"
+        };
+
+        String[] en = {
+                "a","aa","i","ee","u","oo","e","ai","o","au",
+                "k","kh","g","gh","ch","chh","j","jh",
+                "t","th","d","dh","n",
+                "t","th","d","dh","n",
+                "p","ph","b","bh","m",
+                "y","r","l","v",
+                "sh","sh","s","h",
+                "n","h",""
+        };
+
+        for (int i = 0; i < mr.length; i++) {
+            value = value.replace(
+                    mr[i],
+                    en[i]
+            );
+        }
+
+        value = value
+                .replace("ा", "aa")
+                .replace("ि", "i")
+                .replace("ी", "ee")
+                .replace("ु", "u")
+                .replace("ू", "oo")
+                .replace("े", "e")
+                .replace("ै", "ai")
+                .replace("ो", "o")
+                .replace("ौ", "au");
+
+        return value;
+    }
+
+    private String consonantSkeleton(String text) {
+
+        return text.replaceAll(
+                "[aeiou]",
+                ""
+        );
+    }
+
+    private double similarity(
+            String a,
+            String b
+    ) {
+
+        int distance =
+                levenshtein(a, b);
+
+        int max =
+                Math.max(
+                        a.length(),
+                        b.length()
+                );
+
+        if (max == 0) return 1.0;
+
+        return 1.0 -
+                ((double) distance / max);
+    }
+
+    private int levenshtein(
+            String a,
+            String b
+    ) {
+
+        int[][] dp =
+                new int[
+                        a.length() + 1
+                ][
+                        b.length() + 1
+                ];
+
+        for (int i = 0;
+             i <= a.length();
+             i++) {
+
+            dp[i][0] = i;
+        }
+
+        for (int j = 0;
+             j <= b.length();
+             j++) {
+
+            dp[0][j] = j;
+        }
+
+        for (int i = 1;
+             i <= a.length();
+             i++) {
+
+            for (int j = 1;
+                 j <= b.length();
+                 j++) {
+
+                int cost =
+                        a.charAt(i - 1)
+                                == b.charAt(j - 1)
+                                ? 0 : 1;
+
+                dp[i][j] =
+                        Math.min(
+                                Math.min(
+                                        dp[i - 1][j] + 1,
+                                        dp[i][j - 1] + 1
+                                ),
+                                dp[i - 1][j - 1]
+                                        + cost
+                        );
+            }
+        }
+
+        return dp[a.length()][b.length()];
     }
 
     private void askServer(String message) {
 
-        speak("थोडं थांबा.");
-
-        new Thread(() -> {
-
-            HttpURLConnection connection = null;
-
-            try {
-
-                URL url =
-                        new URL(SERVER_URL);
-
-                connection =
-                        (HttpURLConnection)
-                                url.openConnection();
-
-                connection.setRequestMethod("POST");
-                connection.setConnectTimeout(15000);
-                connection.setReadTimeout(30000);
-                connection.setDoOutput(true);
-
-                connection.setRequestProperty(
-                        "Content-Type",
-                        "application/json"
-                );
-
-                String safeMessage =
-                        message
-                                .replace("\\", "\\\\")
-                                .replace("\"", "\\\"");
-
-                String json =
-                        "{\"message\":\"" +
-                        safeMessage +
-                        "\"}";
-
-                OutputStream output =
-                        connection.getOutputStream();
-
-                output.write(
-                        json.getBytes("UTF-8")
-                );
-
-                output.flush();
-                output.close();
-
-                int responseCode =
-                        connection.getResponseCode();
-
-                InputStream stream =
-                        responseCode >= 200 &&
-                        responseCode < 300
-                        ? connection.getInputStream()
-                        : connection.getErrorStream();
-
-                if (stream == null) {
-                    throw new Exception("No response");
-                }
-
-                BufferedReader reader =
-                        new BufferedReader(
-                                new InputStreamReader(stream)
-                        );
-
-                StringBuilder result =
-                        new StringBuilder();
-
-                String line;
-
-                while ((line = reader.readLine()) != null) {
-                    result.append(line);
-                }
-
-                reader.close();
-
-                String reply =
-                        extractJsonReply(
-                                result.toString()
-                        );
-
-                if (reply.isEmpty()) {
-                    reply = result.toString();
-                }
-
-                final String finalReply = reply;
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna AI: " +
-                            finalReply
-                    );
-
-                    speak(finalReply);
-                });
-
-            } catch (Exception e) {
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna AI: Online server unavailable."
-                    );
-
-                    speak(
-                            "Online AI सध्या उपलब्ध नाही."
-                    );
-                });
-
-            } finally {
-
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            }
-
-        }).start();
+        // Temporary offline-safe response.
+        // Render backend connection can be added here.
+        reply(
+                "तुमचा message मिळाला: " +
+                message
+        );
     }
 
-    private String extractJsonReply(String json) {
+    private void reply(String text) {
 
-        try {
-
-            String key = "\"reply\"";
-
-            int start =
-                    json.indexOf(key);
-
-            if (start < 0) return "";
-
-            start =
-                    json.indexOf(":", start);
-
-            if (start < 0) return "";
-
-            start++;
-
-            while (
-                    start < json.length()
-                    &&
-                    Character.isWhitespace(
-                            json.charAt(start))
-            ) {
-                start++;
-            }
-
-            if (start < json.length()
-                    &&
-                    json.charAt(start) == '"') {
-
-                start++;
-
-                int end =
-                        json.indexOf("\"", start);
-
-                if (end > start) {
-
-                    return json.substring(
-                            start,
-                            end
-                    )
-                            .replace(
-                                    "\\\"",
-                                    "\""
-                            )
-                            .replace(
-                                    "\\n",
-                                    "\n"
-                            );
-                }
-            }
-
-        } catch (Exception ignored) {
-        }
-
-        return "";
-    }
-
-    private void addChat(String message) {
-
-        runOnUiThread(() -> {
-
-            if (chat == null) return;
-
-            String old =
-                    chat.getText().toString();
-
-            if (!old.isEmpty()) {
-                old += "\n\n";
-            }
-
-            chat.setText(
-                    old + message
-            );
-        });
+        addChat("Krushna AI: " + text);
+        speak(text);
+        setStatus("Ready");
     }
 
     private void speak(String text) {
 
-        if (textToSpeech == null ||
-                text == null ||
-                text.isEmpty()) {
+        if (tts != null) {
+
+            tts.speak(
+                    text,
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "krushna_reply"
+            );
+        }
+    }
+
+    private void addChat(String text) {
+
+        if (chat != null) {
+
+            String old =
+                    chat.getText().toString();
+
+            chat.setText(
+                    old +
+                    (old.isEmpty() ? "" : "\n\n") +
+                    text
+            );
+        }
+    }
+
+    private void setStatus(String text) {
+
+        if (status != null) {
+            status.setText(text);
+        }
+    }
+
+    private void showOrangeGlow(boolean on) {
+
+        if (!on) {
+            getWindow()
+                    .getDecorView()
+                    .setBackgroundColor(
+                            Color.WHITE
+                    );
             return;
         }
 
-        runOnUiThread(() -> {
+        GradientDrawable glow =
+                new GradientDrawable();
 
-            try {
+        glow.setColor(Color.WHITE);
+        glow.setStroke(
+                12,
+                Color.rgb(255, 120, 0)
+        );
 
-                textToSpeech.speak(
-                        text,
-                        TextToSpeech.QUEUE_FLUSH,
-                        null,
-                        "krushna_reply"
-                );
+        getWindow()
+                .getDecorView()
+                .setBackground(glow);
 
-            } catch (Exception ignored) {
-            }
-        });
-    }
-
-    private boolean containsAny(
-            String text,
-            String... words) {
-
-        for (String word : words) {
-
-            if (text.contains(
-                    word.toLowerCase(Locale.ROOT)
-            )) {
-                return true;
-            }
-        }
-
-        return false;
+        setStatus("🎙️ Listening...");
     }
 
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
             String[] permissions,
-            int[] grantResults) {
+            int[] grantResults
+    ) {
 
         super.onRequestPermissionsResult(
                 requestCode,
@@ -1682,154 +643,24 @@ public class MainActivity extends Activity {
                 grantResults
         );
 
-        if (requestCode == MIC_PERMISSION) {
+        if (requestCode == CONTACT_REQUEST) {
 
-            if (grantResults.length > 0
-                    &&
-                    grantResults[0]
-                    ==
-                    PackageManager.PERMISSION_GRANTED) {
-
-                speak(
-                        "Microphone permission मिळाली."
-                );
-
-                startVoice();
-
-            } else {
-
-                speak(
-                        "Microphone permission आवश्यक आहे."
-                );
-            }
-        }
-
-        if (requestCode == CONTACT_PERMISSION) {
-
-            if (grantResults.length > 0
-                    &&
-                    grantResults[0]
-                    ==
-                    PackageManager.PERMISSION_GRANTED) {
-
-                speak(
-                        "Contacts permission मिळाली."
-                );
-
-            } else {
-
-                speak(
-                        "Contacts permission दिली नाही."
-                );
-            }
+            Toast.makeText(
+                    this,
+                    "Permission मिळाल्यावर पुन्हा command बोला.",
+                    Toast.LENGTH_SHORT
+            ).show();
         }
     }
 
     @Override
     protected void onDestroy() {
 
-        stopEdgeGlow();
-
-        if (speechRecognizer != null) {
-            speechRecognizer.destroy();
-            speechRecognizer = null;
-        }
-
-        if (textToSpeech != null) {
-            textToSpeech.stop();
-            textToSpeech.shutdown();
-            textToSpeech = null;
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
         }
 
         super.onDestroy();
     }
-
-    private static class EdgeGlowView extends View {
-
-        private final Paint paint =
-                new Paint(Paint.ANTI_ALIAS_FLAG);
-
-        private AlphaAnimation animation;
-
-        EdgeGlowView(
-                android.content.Context context) {
-
-            super(context);
-
-            paint.setStyle(
-                    Paint.Style.STROKE
-            );
-
-            paint.setStrokeWidth(12f);
-
-            paint.setColor(
-                    Color.rgb(255, 120, 0)
-            );
-
-            paint.setShadowLayer(
-                    35f,
-                    0f,
-                    0f,
-                    Color.rgb(255, 70, 0)
-            );
-
-            setLayerType(
-                    View.LAYER_TYPE_SOFTWARE,
-                    null
-            );
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-
-            super.onDraw(canvas);
-
-            float w = getWidth();
-            float h = getHeight();
-            float p = 8f;
-
-            canvas.drawRoundRect(
-                    p,
-                    p,
-                    w - p,
-                    h - p,
-                    28f,
-                    28f,
-                    paint
-            );
-        }
-
-        void startGlow() {
-
-            animation =
-                    new AlphaAnimation(
-                            0.25f,
-                            1.0f
-                    );
-
-            animation.setDuration(700);
-
-            animation.setRepeatMode(
-                    AlphaAnimation.REVERSE
-            );
-
-            animation.setRepeatCount(
-                    AlphaAnimation.INFINITE
-            );
-
-            startAnimation(animation);
-
-            invalidate();
-        }
-
-        void stopGlow() {
-
-            if (animation != null) {
-
-                clearAnimation();
-
-                animation = null;
-            }
-        }
-    }
-}
+             }
