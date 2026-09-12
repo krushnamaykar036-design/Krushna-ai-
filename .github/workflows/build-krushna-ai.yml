@@ -43,6 +43,118 @@ jobs:
           cp VoiceService.java \
             "$PROJECT/app/src/main/java/com/example/aiassistant/VoiceService.java"
 
+      - name: Create Krushna AI Layout
+        run: |
+          LAYOUT="$PROJECT/app/src/main/res/layout/activity_main.xml"
+
+          mkdir -p "$(dirname "$LAYOUT")"
+
+          cat > "$LAYOUT" <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+
+          <LinearLayout
+              xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:background="#FFFFFF"
+              android:padding="16dp">
+
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:gravity="center_vertical"
+                  android:orientation="horizontal">
+
+                  <TextView
+                      android:layout_width="0dp"
+                      android:layout_height="wrap_content"
+                      android:layout_weight="1"
+                      android:text="Krushna AI"
+                      android:textColor="#111111"
+                      android:textSize="24sp"
+                      android:textStyle="bold" />
+
+                  <Button
+                      android:id="@+id/settings"
+                      android:layout_width="50dp"
+                      android:layout_height="50dp"
+                      android:text="⚙"
+                      android:textSize="20sp" />
+
+              </LinearLayout>
+
+              <ImageView
+                  android:id="@+id/logo"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="2"
+                  android:src="@drawable/krushna_ai_logo"
+                  android:scaleType="centerInside"
+                  android:contentDescription="Krushna AI Logo" />
+
+              <TextView
+                  android:id="@+id/status"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:gravity="center"
+                  android:text="Ready"
+                  android:textColor="#555555"
+                  android:textSize="18sp"
+                  android:padding="8dp" />
+
+              <TextView
+                  android:id="@+id/chat"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="2"
+                  android:padding="12dp"
+                  android:textColor="#111111"
+                  android:textSize="17sp"
+                  android:gravity="top"
+                  android:scrollbars="vertical" />
+
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="horizontal"
+                  android:gravity="center_vertical">
+
+                  <Button
+                      android:id="@+id/add"
+                      android:layout_width="50dp"
+                      android:layout_height="55dp"
+                      android:text="+" />
+
+                  <EditText
+                      android:id="@+id/input"
+                      android:layout_width="0dp"
+                      android:layout_height="55dp"
+                      android:layout_weight="1"
+                      android:hint="Ask Krushna AI"
+                      android:textColor="#111111"
+                      android:textColorHint="#777777"
+                      android:singleLine="true"
+                      android:padding="12dp" />
+
+                  <Button
+                      android:id="@+id/mic"
+                      android:layout_width="55dp"
+                      android:layout_height="55dp"
+                      android:text="🎙️"
+                      android:textSize="20sp" />
+
+                  <Button
+                      android:id="@+id/send"
+                      android:layout_width="55dp"
+                      android:layout_height="55dp"
+                      android:text="➤" />
+
+              </LinearLayout>
+
+          </LinearLayout>
+          EOF
+
       - name: Add Permissions and Voice Service
         run: |
           MANIFEST=$(find "$PROJECT" -name AndroidManifest.xml -print -quit)
@@ -99,14 +211,6 @@ jobs:
 
           sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' "$MANIFEST"
 
-      - name: Fix Layout
-        run: |
-          LAYOUT="$PROJECT/app/src/main/res/layout/activity_main.xml"
-
-          if [ -f "$LAYOUT" ]; then
-            sed -i 's/android:hintTextColor="[^"]*"//g' "$LAYOUT"
-          fi
-
       - name: Setup Java 17
         uses: actions/setup-java@v5
         with:
@@ -118,7 +222,7 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build Debug APK
+      - name: Build APK
         run: |
           cd "$PROJECT"
           gradle assembleDebug --stacktrace
