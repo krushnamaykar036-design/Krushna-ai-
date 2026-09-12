@@ -729,4 +729,13 @@ public class MainActivity extends Activity {
 
         super.onDestroy();
     }
-            }
+            <TextView
+    android:id="@+id/helloKrushna"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="Hello Krushna 🎙️"
+    android:textColor="#FFFFFF"
+    android:textSize="24sp"
+    android:textStyle="bold"
+    android:gravity="center"
+    android:padding="12dp" />
