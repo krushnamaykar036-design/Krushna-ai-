@@ -42,10 +42,8 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        int layoutId = getResources().getIdentifier(
-                "activity_main", "layout", getPackageName());
-
-        setContentView(layoutId);
+        setContentView(getResources().getIdentifier(
+                "activity_main", "layout", getPackageName()));
 
         input = findViewById(getResources().getIdentifier(
                 "input", "id", getPackageName()));
@@ -83,7 +81,6 @@ public class MainActivity extends Activity {
         }
 
         input.setText("");
-
         chat.append("\n\nYou: " + question);
 
         String lower = question.toLowerCase(Locale.ROOT);
@@ -97,7 +94,6 @@ public class MainActivity extends Activity {
                     "\n\nKrushna AI: Hello! मी तयार आहे. 🎙️");
 
             speak("Hello! मी तयार आहे");
-
             startVoice();
             return;
         }
@@ -247,27 +243,39 @@ public class MainActivity extends Activity {
 
         String name = text.trim();
 
-        String[] words = {
-                "contact", "Contact",
-                "number", "Number",
+        String[] phrases = {
+                "contact",
+                "number",
                 "नंबर",
-                "call", "Call",
+                "call",
                 "कॉल",
-                "phone", "Phone",
+                "phone",
                 "फोन",
-                "ला", "चा", "ची", "चे", "च",
-                "कर", "करा",
-                "करायचा", "करायची",
-                "द्या", "दे",
+                "ला",
+                "चा",
+                "ची",
+                "चे",
+                "च",
+                "करायचा",
+                "करायची",
+                "करा",
+                "द्या",
+                "दे",
                 "दाखव",
-                "उघड", "उघडा",
+                "उघड",
+                "उघडा",
                 "चालू",
-                "open", "Open",
-                "start", "Start"
+                "open",
+                "start"
         };
 
-        for (String word : words) {
-            name = name.replace(word, " ");
+        for (String phrase : phrases) {
+            name = name.replaceAll(
+                    "(?i)(^|\\s)" +
+                    java.util.regex.Pattern.quote(phrase) +
+                    "(?=\\s|$)",
+                    " "
+            );
         }
 
         return name.replaceAll("\\s+", " ").trim();
@@ -314,7 +322,10 @@ public class MainActivity extends Activity {
 
                 startActivity(dialIntent);
 
-                speak(contactName + " चा नंबर उघडत आहे");
+                speak(
+                        contactName +
+                        " चा नंबर Dialer मध्ये उघडत आहे"
+                );
 
             } else {
 
@@ -339,14 +350,12 @@ public class MainActivity extends Activity {
     private void openDialer() {
 
         try {
-
             startActivity(
                     new Intent(Intent.ACTION_DIAL));
 
             speak("Phone उघडत आहे");
 
         } catch (Exception e) {
-
             speak("Phone उघडता आला नाही");
         }
     }
@@ -413,7 +422,6 @@ public class MainActivity extends Activity {
                         searchName.contains(appName)) {
 
                     startActivity(launchIntent);
-
                     speak(appName + " उघडत आहे");
 
                     return true;
@@ -517,8 +525,7 @@ public class MainActivity extends Activity {
                             "\n\nKrushna AI: " +
                             "Server connect झाला नाही.");
 
-                    speak(
-                            "Server connect झाला नाही");
+                    speak("Server connect झाला नाही");
                 });
 
             } finally {
@@ -650,4 +657,4 @@ public class MainActivity extends Activity {
 
         super.onDestroy();
     }
-                    }
+                              }
