@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -44,53 +43,31 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         setContentView(getResources().getIdentifier(
-                "activity_main",
-                "layout",
-                getPackageName()
-        ));
+                "activity_main", "layout", getPackageName()));
 
         input = findViewById(
                 getResources().getIdentifier(
-                        "input",
-                        "id",
-                        getPackageName()
-                )
-        );
+                        "input", "id", getPackageName()));
 
         chat = findViewById(
                 getResources().getIdentifier(
-                        "chat",
-                        "id",
-                        getPackageName()
-                )
-        );
+                        "chat", "id", getPackageName()));
 
         Button mic = findViewById(
                 getResources().getIdentifier(
-                        "mic",
-                        "id",
-                        getPackageName()
-                )
-        );
+                        "mic", "id", getPackageName()));
 
         Button send = findViewById(
                 getResources().getIdentifier(
-                        "send",
-                        "id",
-                        getPackageName()
-                )
-        );
+                        "send", "id", getPackageName()));
 
         tts = new TextToSpeech(this, status -> {
-
             if (status == TextToSpeech.SUCCESS) {
                 tts.setLanguage(Locale.getDefault());
             }
-
         });
 
         send.setOnClickListener(v -> sendMessage());
-
         mic.setOnClickListener(v -> startVoice());
 
         chat.setText("Krushna AI तयार आहे. 🎙️");
@@ -100,17 +77,12 @@ public class MainActivity extends Activity {
 
         String question = input.getText().toString().trim();
 
-        if (question.isEmpty()) {
-            return;
-        }
+        if (question.isEmpty()) return;
 
         chat.append("\n\nYou: " + question);
-
         input.setText("");
 
-        if (handleCommand(question)) {
-            return;
-        }
+        if (handleCommand(question)) return;
 
         askServer(question);
     }
@@ -119,7 +91,7 @@ public class MainActivity extends Activity {
 
         String lower = text.toLowerCase(Locale.ROOT);
 
-        // CONTACT COMMAND
+        // CONTACT
         if (lower.contains("contact") ||
                 lower.contains("नंबर") ||
                 lower.contains("number") ||
@@ -133,9 +105,7 @@ public class MainActivity extends Activity {
 
         // SETTINGS
         if (lower.contains("settings")) {
-
             openAppByPackage("com.android.settings");
-
             return true;
         }
 
@@ -143,16 +113,10 @@ public class MainActivity extends Activity {
         if (lower.contains("camera")) {
 
             try {
-
-                Intent intent =
-                        new Intent("android.media.action.IMAGE_CAPTURE");
-
-                startActivity(intent);
-
+                startActivity(new Intent(
+                        "android.media.action.IMAGE_CAPTURE"));
                 speak("Camera उघडत आहे");
-
             } catch (Exception e) {
-
                 speak("Camera उघडता आला नाही");
             }
 
@@ -161,25 +125,20 @@ public class MainActivity extends Activity {
 
         // WHATSAPP
         if (lower.contains("whatsapp")) {
-
             openAppByPackage("com.whatsapp");
-
             return true;
         }
 
         // YOUTUBE
         if (lower.contains("youtube")) {
-
-            openAppByPackage("com.google.android.youtube");
-
+            openAppByPackage(
+                    "com.google.android.youtube");
             return true;
         }
 
         // CHROME
         if (lower.contains("chrome")) {
-
             openAppByPackage("com.android.chrome");
-
             return true;
         }
 
@@ -190,7 +149,6 @@ public class MainActivity extends Activity {
                 lower.contains("dialer")) {
 
             openDialer();
-
             return true;
         }
 
@@ -201,11 +159,11 @@ public class MainActivity extends Activity {
 
             try {
 
-                Intent intent = new Intent(Intent.ACTION_MAIN);
+                Intent intent =
+                        new Intent(Intent.ACTION_MAIN);
 
                 intent.addCategory(
-                        Intent.CATEGORY_APP_MESSAGING
-                );
+                        Intent.CATEGORY_APP_MESSAGING);
 
                 startActivity(intent);
 
@@ -227,8 +185,7 @@ public class MainActivity extends Activity {
 
                 Intent intent = new Intent(
                         Intent.ACTION_VIEW,
-                        Uri.parse("geo:0,0?q=")
-                );
+                        Uri.parse("geo:0,0?q="));
 
                 startActivity(intent);
 
@@ -242,7 +199,7 @@ public class MainActivity extends Activity {
             return true;
         }
 
-        // GENERIC INSTALLED APP
+        // INSTALLED APP SEARCH
         if (lower.contains("open") ||
                 lower.contains("उघड") ||
                 lower.contains("चालू") ||
@@ -253,7 +210,6 @@ public class MainActivity extends Activity {
             }
         }
 
-        // SIMPLE APP NAME
         if (openInstalledApp(text)) {
             return true;
         }
@@ -261,49 +217,93 @@ public class MainActivity extends Activity {
         return false;
     }
 
+    // ---------------- CONTACT SEARCH ----------------
+
     private boolean findContactCommand(String text) {
 
         if (checkSelfPermission(
-                Manifest.permission.READ_CONTACTS
-        ) != PackageManager.PERMISSION_GRANTED) {
+                Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
 
             requestPermissions(
                     new String[]{
                             Manifest.permission.READ_CONTACTS
                     },
-                    CONTACT_PERMISSION
-            );
+                    CONTACT_PERMISSION);
 
             return true;
         }
 
-        String name = text.toLowerCase(Locale.ROOT);
-
-        name = name.replace("contact", "");
-        name = name.replace("number", "");
-        name = name.replace("नंबर", "");
-        name = name.replace("call", "");
-        name = name.replace("कॉल", "");
-        name = name.replace("phone", "");
-        name = name.replace("फोन", "");
-        name = name.replace("ला", "");
-        name = name.replace("चा", "");
-        name = name.replace("ची", "");
-        name = name.replace("च", "");
-        name = name.replace("कर", "");
-        name = name.replace("उघड", "");
-        name = name.trim();
+        String name = extractContactName(text);
 
         if (name.isEmpty()) {
 
             speak("Contact चे नाव सांगा");
-
             return true;
         }
 
         findContact(name);
 
         return true;
+    }
+
+    private String extractContactName(String text) {
+
+        String name = text.trim();
+
+        String[] removeWords = {
+
+                "contact",
+                "Contact",
+                "number",
+                "Number",
+                "नंबर",
+
+                "call",
+                "Call",
+                "कॉल",
+
+                "phone",
+                "Phone",
+                "फोन",
+
+                "ला",
+                "ला ",
+                "चा",
+                "ची",
+                "चे",
+                "च",
+
+                "कर",
+                "करा",
+                "करायचा",
+                "करायची",
+
+                "द्या",
+                "दे",
+                "दाखव",
+
+                "उघड",
+                "उघडा",
+                "चालू",
+
+                "open",
+                "Open",
+
+                "start",
+                "Start"
+        };
+
+        for (String word : removeWords) {
+            name = name.replace(word, " ");
+        }
+
+        name = name.replaceAll(
+                "\\s+",
+                " "
+        ).trim();
+
+        return name;
     }
 
     private void findContact(String name) {
@@ -341,9 +341,9 @@ public class MainActivity extends Activity {
 
                 chat.append(
                         "\n\nKrushna AI: " +
-                                contactName +
-                                " - " +
-                                number
+                        contactName +
+                        " - " +
+                        number
                 );
 
                 Intent dialIntent =
@@ -356,17 +356,20 @@ public class MainActivity extends Activity {
 
                 speak(
                         contactName +
-                                " चा नंबर उघडत आहे"
+                        " चा नंबर उघडत आहे"
                 );
 
             } else {
 
-                speak("हा contact सापडला नाही");
+                speak(
+                        name +
+                        " नावाचा contact सापडला नाही"
+                );
             }
 
         } catch (Exception e) {
 
-            speak("Contacts शोधता आले नाहीत");
+            speak("Contacts search मध्ये समस्या आली");
 
         } finally {
 
@@ -375,6 +378,8 @@ public class MainActivity extends Activity {
             }
         }
     }
+
+    // ---------------- PHONE ----------------
 
     private void openDialer() {
 
@@ -393,6 +398,8 @@ public class MainActivity extends Activity {
         }
     }
 
+    // ---------------- APP OPEN ----------------
+
     private void openAppByPackage(String packageName) {
 
         try {
@@ -402,8 +409,7 @@ public class MainActivity extends Activity {
 
             Intent launchIntent =
                     pm.getLaunchIntentForPackage(
-                            packageName
-                    );
+                            packageName);
 
             if (launchIntent != null) {
 
@@ -439,16 +445,13 @@ public class MainActivity extends Activity {
             ArrayList<ApplicationInfo> apps =
                     new ArrayList<>(
                             pm.getInstalledApplications(
-                                    PackageManager.GET_META_DATA
-                            )
-                    );
+                                    PackageManager.GET_META_DATA));
 
             for (ApplicationInfo app : apps) {
 
                 Intent launchIntent =
                         pm.getLaunchIntentForPackage(
-                                app.packageName
-                        );
+                                app.packageName);
 
                 if (launchIntent == null) {
                     continue;
@@ -467,7 +470,7 @@ public class MainActivity extends Activity {
 
                     speak(
                             appName +
-                                    " उघडत आहे"
+                            " उघडत आहे"
                     );
 
                     return true;
@@ -489,6 +492,7 @@ public class MainActivity extends Activity {
 
         name = name.replace("open", "");
         name = name.replace("उघड", "");
+        name = name.replace("उघडा", "");
         name = name.replace("चालू", "");
         name = name.replace("start", "");
         name = name.replace("app", "");
@@ -496,6 +500,8 @@ public class MainActivity extends Activity {
 
         return name.trim();
     }
+
+    // ---------------- SERVER ----------------
 
     private void askServer(String question) {
 
@@ -548,7 +554,6 @@ public class MainActivity extends Activity {
                 String line;
 
                 while ((line = reader.readLine()) != null) {
-
                     result.append(line);
                 }
 
@@ -556,8 +561,7 @@ public class MainActivity extends Activity {
 
                 JSONObject response =
                         new JSONObject(
-                                result.toString()
-                        );
+                                result.toString());
 
                 String reply =
                         response.optString(
@@ -569,7 +573,7 @@ public class MainActivity extends Activity {
 
                     chat.append(
                             "\n\nKrushna AI: " +
-                                    reply
+                            reply
                     );
 
                     speak(reply);
@@ -581,7 +585,7 @@ public class MainActivity extends Activity {
 
                     chat.append(
                             "\n\nKrushna AI: " +
-                                    "Server connect झाला नाही."
+                            "Server connect झाला नाही."
                     );
 
                     speak(
@@ -593,18 +597,19 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    // ---------------- VOICE ----------------
+
     private void startVoice() {
 
         if (checkSelfPermission(
-                Manifest.permission.RECORD_AUDIO
-        ) != PackageManager.PERMISSION_GRANTED) {
+                Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
 
             requestPermissions(
                     new String[]{
                             Manifest.permission.RECORD_AUDIO
                     },
-                    MIC_PERMISSION
-            );
+                    MIC_PERMISSION);
 
             return;
         }
@@ -614,30 +619,24 @@ public class MainActivity extends Activity {
             Intent intent =
                     new Intent(
                             RecognizerIntent
-                                    .ACTION_RECOGNIZE_SPEECH
-                    );
+                                    .ACTION_RECOGNIZE_SPEECH);
 
             intent.putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                     RecognizerIntent
-                            .EXTRA_LANGUAGE_MODEL,
-                    RecognizerIntent
-                            .LANGUAGE_MODEL_FREE_FORM
-            );
+                            .LANGUAGE_MODEL_FREE_FORM);
 
             intent.putExtra(
                     RecognizerIntent.EXTRA_LANGUAGE,
-                    "mr-IN"
-            );
+                    "mr-IN");
 
             intent.putExtra(
                     RecognizerIntent.EXTRA_PROMPT,
-                    "Krushna AI ला बोला"
-            );
+                    "Krushna AI ला बोला");
 
             startActivityForResult(
                     intent,
-                    VOICE
-            );
+                    VOICE);
 
         } catch (Exception e) {
 
@@ -649,14 +648,12 @@ public class MainActivity extends Activity {
     protected void onActivityResult(
             int requestCode,
             int resultCode,
-            Intent data
-    ) {
+            Intent data) {
 
         super.onActivityResult(
                 requestCode,
                 resultCode,
-                data
-        );
+                data);
 
         if (requestCode == VOICE &&
                 resultCode == RESULT_OK &&
@@ -664,8 +661,7 @@ public class MainActivity extends Activity {
 
             ArrayList<String> results =
                     data.getStringArrayListExtra(
-                            RecognizerIntent.EXTRA_RESULTS
-                    );
+                            RecognizerIntent.EXTRA_RESULTS);
 
             if (results != null &&
                     !results.isEmpty()) {
@@ -677,18 +673,18 @@ public class MainActivity extends Activity {
         }
     }
 
+    // ---------------- PERMISSIONS ----------------
+
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
             String[] permissions,
-            int[] grantResults
-    ) {
+            int[] grantResults) {
 
         super.onRequestPermissionsResult(
                 requestCode,
                 permissions,
-                grantResults
-        );
+                grantResults);
 
         if (requestCode == MIC_PERMISSION &&
                 grantResults.length > 0 &&
@@ -706,6 +702,8 @@ public class MainActivity extends Activity {
             speak("Contacts permission मिळाली");
         }
     }
+
+    // ---------------- VOICE REPLY ----------------
 
     private void speak(String text) {
 
@@ -731,4 +729,4 @@ public class MainActivity extends Activity {
 
         super.onDestroy();
     }
-                    }
+            }
