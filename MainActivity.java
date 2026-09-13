@@ -553,83 +553,124 @@ public class MainActivity extends Activity {
 
     private void askServer(String message) {
 
-        // Temporary offline-safe response.
-        // Render backend connection can be added here.
-        reply(
-                "तुमचा message मिळाला: " +
-                message
-        );
-    }
-
-    private void reply(String text) {
-
-        addChat("Krushna AI: " + text);
-        speak(text);
-        setStatus("Ready");
-    }
-
-    private void speak(String text) {
-
-        if (tts != null) {
-
-            tts.speak(
-                    text,
-                    TextToSpeech.QUEUE_FLUSH,
-                    null,
-                    "krushna_reply"
+    new Thread(() -> {
+        try {
+            java.net.URL url = new java.net.URL(
+                    "https://krushna-ai-hseh.onrender.com/chat"
             );
-        }
-    }
 
-    private void addChat(String text) {
+            java.net.HttpURLConnection connection =
+                    (java.net.HttpURLConnection) url.openConnection();
 
-        if (chat != null) {
-
-            String old =
-                    chat.getText().toString();
-
-            chat.setText(
-                    old +
-                    (old.isEmpty() ? "" : "\n\n") +
-                    text
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty(
+                    "Content-Type",
+                    "application/json; charset=UTF-8"
             );
-        }
-    }
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(30000);
 
-    private void setStatus(String text) {
+            String json =
+                    "{\"message\":\"" +
+                    message
+                            .replace("\\", "\\\\")
+                            .replace("\"", "\\\"")
+                            .replace("\n", "\\n")
+                    + "\"}";
 
-        if (status != null) {
-            status.setText(text);
-        }
-    }
+            java.io.OutputStream output =
+                    connection.getOutputStream();
 
-    private void showOrangeGlow(boolean on) {
+            output.write(
+                    json.getBytes(
+                            java.nio.charset.StandardCharsets.UTF_8
+                    )
+            );
 
-        if (!on) {
-            getWindow()
-                    .getDecorView()
-                    .setBackgroundColor(
-                            Color.WHITE
+            output.close();
+
+            int responseCode =
+                    connection.getResponseCode();
+
+            java.io.InputStream stream;
+
+            if (responseCode >= 200 && responseCode < 300) {
+                stream = connection.getInputStream();
+            } else {
+                stream = connection.getErrorStream();
+            }
+
+            java.io.BufferedReader reader =
+                    new java.io.BufferedReader(
+                            new java.io.InputStreamReader(
+                                    stream,
+                                    java.nio.charset.StandardCharsets.UTF_8
+                            )
                     );
-            return;
+
+            StringBuilder response =
+                    new StringBuilder();
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+
+            reader.close();
+            connection.disconnect();
+
+            String result =
+                    response.toString();
+
+            String reply = result;
+
+            int start =
+                    result.indexOf("\"reply\"");
+
+            if (start >= 0) {
+
+                int colon =
+                        result.indexOf(":", start);
+
+                int firstQuote =
+                        result.indexOf("\"", colon + 1);
+
+                int secondQuote =
+                        result.indexOf("\"", firstQuote + 1);
+
+                if (firstQuote >= 0
+                        && secondQuote > firstQuote) {
+
+                    reply =
+                            result.substring(
+                                    firstQuote + 1,
+                                    secondQuote
+                            );
+                }
+            }
+
+            final String finalReply =
+                    reply
+                            .replace("\\n", "\n")
+                            .replace("\\\"", "\"");
+
+            runOnUiThread(() -> {
+                reply(finalReply);
+            });
+
+        } catch (Exception e) {
+
+            runOnUiThread(() -> {
+                reply(
+                        "Online server ला connect होता आलं नाही."
+                );
+            });
         }
 
-        GradientDrawable glow =
-                new GradientDrawable();
-
-        glow.setColor(Color.WHITE);
-        glow.setStroke(
-                12,
-                Color.rgb(255, 120, 0)
-        );
-
-        getWindow()
-                .getDecorView()
-                .setBackground(glow);
-
-        setStatus("🎙️ Listening...");
+    }).start();
     }
-
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
