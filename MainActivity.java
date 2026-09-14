@@ -834,7 +834,8 @@ public class MainActivity extends Activity {
             String text
     ) {
 
-        String value = text
+        String value = text 
+            String value = text;
              ) {
 
         String value = text;
