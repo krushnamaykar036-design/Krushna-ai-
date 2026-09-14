@@ -837,7 +837,7 @@ public class MainActivity extends Activity {
         String value = text 
             String value = text;
              ) {
-
+                 
         String value = text;
 
         String[] mr = {
