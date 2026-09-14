@@ -55,11 +55,16 @@ app.post("/chat", async (req, res) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Gemini error:", data);
+  console.error("Gemini HTTP Error:", response.status);
+  console.error("Gemini Error Data:", data);
 
-      return res.status(500).json({
-        reply: "Gemini AI कडून उत्तर मिळाले नाही."
-      });
+  return res.status(500).json({
+    reply:
+      "Gemini Error " +
+      response.status +
+      ": " +
+      (data?.error?.message || "Unknown error")
+  });
     }
 
     const reply =
