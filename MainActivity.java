@@ -789,56 +789,35 @@ public class MainActivity extends Activity {
 
         return similarity(a, b) >= 0.65;
     }
+   private String normalize(String text) {
 
-    private String normalize(
-            String text
-    ) {
+    String value = text.toLowerCase(Locale.ROOT).trim();
 
-        String value =
-                text.toLowerCase(
-                        Locale.ROOT
-                ).trim();
+    value = devanagariToLatin(value);
 
-        value =
-                devanagariToLatin(value);
+    value = value.replaceAll(
+            "[^a-z0-9]",
+            ""
+    );
 
-        value =
-                value.replaceAll(
-                        "[^a-z0-9]",
-                        ""
-                );
-
-        while (value.endsWith("aa")) {
-
-            value =
-                    value.substring(
-                            0,
-                            value.length() - 1
-                    );
-        }
-
-        if (value.endsWith("a")
-                && value.length() > 4) {
-
-            value =
-                    value.substring(
-                            0,
-                            value.length() - 1
-                    );
-        }
-
-        return value;
+    while (value.endsWith("aa")) {
+        value = value.substring(
+                0,
+                value.length() - 1
+        );
     }
 
-    private String devanagariToLatin(
-            String text
-    ) {
+    if (value.endsWith("a")
+            && value.length() > 4) {
 
-        String value = text 
-            String value = text;
-             ) {
-                 
-        String value = text;
+        value = value.substring(
+                0,
+                value.length() - 1
+        );
+    }
+
+    return value;
+   } 
 
         String[] mr = {
 
