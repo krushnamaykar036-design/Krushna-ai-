@@ -1,18 +1,15 @@
 package com.example.aiassistant;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
-import android.view.Gravity;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -39,8 +36,6 @@ public class MainActivity extends Activity {
     private TextView status;
     private TextView chat;
     private EditText input;
-    private Button micButton;
-
     private TextToSpeech tts;
 
     private static final String SERVER_URL =
@@ -73,7 +68,7 @@ public class MainActivity extends Activity {
         title.setText("KRUSHNA AI 🤖");
         title.setTextSize(28);
         title.setTextColor(Color.WHITE);
-        title.setGravity(Gravity.CENTER);
+        title.setGravity(17);
         title.setPadding(10, 20, 10, 20);
 
         root.addView(title);
@@ -82,7 +77,7 @@ public class MainActivity extends Activity {
         logoText.setText("🟠  K R U S H N A  A I  🟠");
         logoText.setTextSize(20);
         logoText.setTextColor(Color.rgb(255, 140, 0));
-        logoText.setGravity(Gravity.CENTER);
+        logoText.setGravity(17);
         logoText.setPadding(5, 5, 5, 20);
 
         root.addView(logoText);
@@ -91,7 +86,7 @@ public class MainActivity extends Activity {
         status.setText("Ready");
         status.setTextSize(16);
         status.setTextColor(Color.LTGRAY);
-        status.setGravity(Gravity.CENTER);
+        status.setGravity(17);
         status.setPadding(10, 10, 10, 15);
 
         root.addView(status);
@@ -103,10 +98,14 @@ public class MainActivity extends Activity {
                 "Krushna AI ready आहे. 🤖\n\n" +
                 "Try:\n" +
                 "• YouTube उघड\n" +
-                "• Chrome उघड\n" +
                 "• WhatsApp उघड\n" +
+                "• Instagram उघड\n" +
+                "• Chrome उघड\n" +
                 "• Camera उघड\n" +
+                "• Gallery उघड\n" +
+                "• Settings उघड\n" +
                 "• Calculator उघड\n" +
+                "• Home Screen\n" +
                 "• Hello\n"
         );
 
@@ -116,14 +115,14 @@ public class MainActivity extends Activity {
 
         scrollView.addView(chat);
 
-        LinearLayout.LayoutParams scrollParams =
+        root.addView(
+                scrollView,
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         0,
                         1
-                );
-
-        root.addView(scrollView, scrollParams);
+                )
+        );
 
         input = new EditText(this);
         input.setHint("Type your message...");
@@ -148,14 +147,14 @@ public class MainActivity extends Activity {
 
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
-        buttons.setGravity(Gravity.CENTER);
+        buttons.setGravity(17);
         buttons.setPadding(0, 12, 0, 0);
 
         Button sendButton = new Button(this);
         sendButton.setText("SEND");
         sendButton.setTextColor(Color.WHITE);
 
-        micButton = new Button(this);
+        Button micButton = new Button(this);
         micButton.setText("🎤 MIC");
         micButton.setTextColor(Color.WHITE);
 
@@ -181,18 +180,22 @@ public class MainActivity extends Activity {
 
         sendButton.setOnClickListener(v -> {
 
-            String message = input.getText().toString().trim();
+            String message =
+                    input.getText().toString().trim();
 
             if (message.isEmpty()) {
+
                 Toast.makeText(
                         this,
                         "Message type कर bro 😄",
                         Toast.LENGTH_SHORT
                 ).show();
+
                 return;
             }
 
             input.setText("");
+
             handleCommand(message);
         });
 
@@ -206,7 +209,9 @@ public class MainActivity extends Activity {
         try {
 
             Intent intent =
-                    new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    new Intent(
+                            RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+                    );
 
             intent.putExtra(
                     RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -223,7 +228,10 @@ public class MainActivity extends Activity {
                     "Krushna AI ला command बोला"
             );
 
-            startActivityForResult(intent, VOICE_REQUEST);
+            startActivityForResult(
+                    intent,
+                    VOICE_REQUEST
+            );
 
             setStatus("Listening... 🎤");
 
@@ -261,9 +269,11 @@ public class MainActivity extends Activity {
                             RecognizerIntent.EXTRA_RESULTS
                     );
 
-            if (results != null && !results.isEmpty()) {
+            if (results != null
+                    && !results.isEmpty()) {
 
-                String command = results.get(0);
+                String command =
+                        results.get(0);
 
                 input.setText(command);
 
@@ -278,161 +288,100 @@ public class MainActivity extends Activity {
             return;
         }
 
-        String lower = command.toLowerCase(Locale.ROOT).trim();
+        String lower =
+                command.toLowerCase(Locale.ROOT).trim();
 
         addChat("You: " + command);
 
         /*
-         * HOME COMMANDS FIRST
-         * त्यामुळे Gemini quota वाया जाणार नाही.
+         * HOME / APP COMMANDS FIRST
+         * Gemini quota खर्च होणार नाही.
          */
 
-        private boolean runHomeCommand(String command) {
-
-    if (command == null) {
-        return false;
-    }
-
-    String text = command.toLowerCase(Locale.ROOT).trim();
-
-    // HOME SCREEN
-    if (containsAny(
-            text,
-            "home",
-            "home screen",
-            "होम",
-            "होम स्क्रीन",
-            "घरी जा"
-    )) {
-        openHomeScreen();
-        return true;
-    }
-
-    // CAMERA
-    if (containsAny(text, "camera", "कॅमेरा")) {
-        try {
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            startActivity(intent);
-            reply("Camera उघडत आहे 📷");
-        } catch (Exception e) {
-            reply("Camera उघडता आला नाही.");
+        if (runHomeCommand(lower)) {
+            return;
         }
-        return true;
-    }
 
-    // SETTINGS
-    if (containsAny(
-            text,
-            "settings",
-            "setting",
-            "सेटिंग",
-            "सेटिंग्स"
-    )) {
-        try {
-            Intent intent =
-                    new Intent(android.provider.Settings.ACTION_SETTINGS);
-            startActivity(intent);
-            reply("Settings उघडत आहे ⚙️");
-        } catch (Exception e) {
-            reply("Settings उघडता आले नाही.");
+        /*
+         * GREETINGS
+         */
+
+        if (lower.equals("hello")
+                || lower.equals("hi")
+                || lower.contains("नमस्कार")
+                || lower.contains("namaskar")) {
+
+            reply(
+                    "Hello bro 👋 मी Krushna AI आहे. काय करू?"
+            );
+
+            return;
         }
-        return true;
-    }
 
-    // PHONE
-    if (containsAny(
-            text,
-            "phone",
-            "dialer",
-            "फोन",
-            "डायलर"
-    )) {
-        openDialer();
-        reply("Phone उघडत आहे 📞");
-        return true;
-    }
+        /*
+         * CALL / PHONE
+         */
 
-    // GALLERY / PHOTOS
-    if (containsAny(
-            text,
-            "gallery",
-            "photos",
-            "photo",
-            "गॅलरी",
-            "फोटो"
-    )) {
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setType("image/*");
-            startActivity(intent);
-            reply("Gallery उघडत आहे 🖼️");
-        } catch (Exception e) {
-            reply("Gallery उघडता आली नाही.");
+        if (lower.contains("call")
+                || lower.contains("फोन कर")
+                || lower.contains("कॉल कर")
+                || lower.contains("call kar")) {
+
+            openDialer();
+
+            reply(
+                    "Phone dialer उघडला आहे 📞
+                     );
+
+            return;
         }
-        return true;
+
+        /*
+         * बाकी प्रश्न Online AI कडे.
+         */
+
+        askServer(command);
     }
 
-    // CALCULATOR
-    if (containsAny(
-            text,
-            "calculator",
-            "calc",
-            "कॅल्क्युलेटर"
-    )) {
-        try {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_APP_CALCULATOR);
-            startActivity(intent);
-            reply("Calculator उघडत आहे 🧮");
-        } catch (Exception e) {
-            reply("Calculator app सापडली नाही.");
+    /*
+     * ==========================================
+     * HOME + APP COMMANDS
+     * ==========================================
+     */
+
+    private boolean runHomeCommand(String command) {
+
+        if (command == null) {
+            return false;
         }
-        return true;
-    }
 
-    // ANY INSTALLED APP
-    if (openAnyInstalledApp(text)) {
-        return true;
-    }
+        String text =
+                command.toLowerCase(Locale.ROOT).trim();
 
-    return false;
-    }
+        /*
+         * HOME SCREEN
+         */
+
         if (containsAny(
-                command,
-                "settings",
-                "setting",
-                "सेटिंग",
-                "सेटिंग्स"
+                text,
+                "home screen",
+                "home",
+                "होम स्क्रीन",
+                "होम",
+                "घरी जा"
         )) {
 
-            try { 
-                if (openAnyInstalledApp(text)) {
-    return true;
-                }
-
-                Intent intent =
-                        new Intent(
-                                android.provider.Settings.ACTION_SETTINGS
-                        );
-
-                startActivity(intent);
-
-                reply("Settings उघडत आहे ⚙️");
-
-            } catch (Exception e) {
-
-                reply("Settings उघडता आले नाही.");
-            }
+            openHomeScreen();
 
             return true;
         }
 
         /*
-         * Camera
+         * CAMERA
          */
 
         if (containsAny(
-                command,
+                text,
                 "camera",
                 "कॅमेरा"
         )) {
@@ -446,65 +395,61 @@ public class MainActivity extends Activity {
 
                 startActivity(intent);
 
-                reply("Camera उघडत आहे 📷");
+                reply(
+                        "Camera उघडत आहे 📷"
+                );
 
             } catch (Exception e) {
 
-                reply("Camera उघडता आला नाही.");
+                reply(
+                        "Camera उघडता आला नाही."
+                );
             }
 
             return true;
         }
 
         /*
-         * Calculator
+         * SETTINGS
          */
 
         if (containsAny(
-                command,
-                "calculator",
-                "calc",
-                "कॅल्क्युलेटर"
+                text,
+                "settings",
+                "setting",
+                "सेटिंग",
+                "सेटिंग्स"
         )) {
 
-            boolean opened =
-                    openPackage(
-                            "com.google.android.calculator",
-                            "Calculator"
-                    );
+            try {
 
-            if (!opened) {
+                Intent intent =
+                        new Intent(
+                                Settings.ACTION_SETTINGS
+                        );
 
-                try {
+                startActivity(intent);
 
-                    Intent intent =
-                            new Intent(
-                                    Intent.ACTION_MAIN
-                            );
+                reply(
+                        "Settings उघडत आहे ⚙️"
+                );
 
-                    intent.addCategory(
-                            Intent.CATEGORY_APP_CALCULATOR
-                    );
+            } catch (Exception e) {
 
-                    startActivity(intent);
-
-                    reply("Calculator उघडत आहे 🧮");
-
-                } catch (Exception e) {
-
-                    reply("Calculator app सापडली नाही.");
-                }
+                reply(
+                        "Settings उघडता आले नाही."
+                );
             }
 
             return true;
         }
 
         /*
-         * Gallery / Photos
+         * GALLERY
          */
 
         if (containsAny(
-                command,
+                text,
                 "gallery",
                 "photos",
                 "photo",
@@ -523,53 +468,315 @@ public class MainActivity extends Activity {
 
                 startActivity(intent);
 
-                reply("Gallery उघडत आहे 🖼️");
+                reply(
+                        "Gallery उघडत आहे 🖼️"
+                );
 
             } catch (Exception e) {
 
-                reply("Gallery उघडता आली नाही.");
+                reply(
+                        "Gallery उघडता आली नाही."
+                );
             }
 
             return true;
         }
 
         /*
-         * Phone
+         * CALCULATOR
          */
 
         if (containsAny(
-                command,
+                text,
+                "calculator",
+                "calc",
+                "कॅल्क्युलेटर"
+        )) {
+
+            try {
+
+                Intent intent =
+                        new Intent(Intent.ACTION_MAIN);
+
+                intent.addCategory(
+                        Intent.CATEGORY_APP_CALCULATOR
+                );
+
+                startActivity(intent);
+
+                reply(
+                        "Calculator उघडत आहे 🧮"
+                );
+
+            } catch (Exception e) {
+
+                reply(
+                        "Calculator app सापडली नाही."
+                );
+            }
+
+            return true;
+        }
+
+        /*
+         * PHONE
+         */
+
+        if (containsAny(
+                text,
                 "phone",
                 "dialer",
-                "फोन"
+                "फोन",
+                "डायलर"
         )) {
 
             openDialer();
 
-            reply("Phone उघडत आहे 📞");
+            reply(
+                    "Phone उघडत आहे 📞"
+            );
 
+            return true;
+        }
+
+        /*
+         * SPECIFIC POPULAR APPS
+         */
+
+        if (containsAny(
+                text,
+                "youtube",
+                "यूट्यूब",
+                "युट्युब"
+        )) {
+
+            if (openAppByPackage(
+                    "com.google.android.youtube",
+                    "YouTube"
+            )) {
+                return true;
+            }
+
+            /*
+             * YouTube app package सापडला नाही तर
+             * browser मध्ये YouTube उघडतो.
+             */
+
+            try {
+
+                Intent intent =
+                        new Intent(
+                                Intent.ACTION_VIEW,
+                                android.net.Uri.parse(
+                                        "https://www.youtube.com"
+                                )
+                        );
+
+                startActivity(intent);
+
+                reply(
+                        "YouTube उघडत आहे ▶️"
+                );
+
+            } catch (Exception e) {
+
+                reply(
+                        "YouTube उघडता आले नाही."
+                );
+            }
+
+            return true;
+        }
+
+        if (containsAny(
+                text,
+                "whatsapp",
+                "व्हाट्सअप",
+                "व्हॉट्सअॅप"
+        )) {
+
+            if (openAppByPackage(
+                    "com.whatsapp",
+                    "WhatsApp"
+            )) {
+                return true;
+            }
+
+            return true;
+        }
+
+        if (containsAny(
+                text,
+                "instagram",
+                "इंस्टाग्राम"
+        )) {
+
+            if (openAppByPackage(
+                    "com.instagram.android",
+                    "Instagram"
+            )) {
+                return true;
+            }
+
+            return true;
+        }
+
+        if (containsAny(
+                text,
+                "chrome",
+                "क्रोम"
+        )) {
+
+            if (openAppByPackage(
+                    "com.android.chrome",
+                    "Chrome"
+            )) {
+                return true;
+            }
+
+            try {
+
+                Intent intent =
+                        new Intent(
+                                Intent.ACTION_VIEW,
+                                android.net.Uri.parse(
+                                        "https://www.google.com"
+                                )
+                        );
+
+                startActivity(intent);
+
+                reply(
+                        "Chrome उघडत आहे 🌐"
+                );
+
+            } catch (Exception e) {
+
+                reply(
+                        "Chrome उघडता आला नाही."
+                );
+            }
+
+            return true;
+        }
+
+        /*
+         * ALL INSTALLED APPS
+         */
+
+        if (openAnyInstalledApp(text)) {
             return true;
         }
 
         return false;
     }
 
-    private boolean containsAny(
-            String text,
-            String... words
-    ) {
+    /*
+     * ==========================================
+     * ALL INSTALLED APPS LAUNCHER
+     * ==========================================
+     */
 
-        for (String word : words) {
+    private boolean openAnyInstalledApp(String command) {
 
-            if (text.contains(word)) {
-                return true;
+        try { 
+            PackageManager pm =
+                    getPackageManager();
+
+            Intent launcherIntent =
+                    new Intent(Intent.ACTION_MAIN);
+
+            launcherIntent.addCategory(
+                    Intent.CATEGORY_LAUNCHER
+            );
+
+            ArrayList<android.content.pm.ResolveInfo> apps =
+                    new ArrayList<>(
+                            pm.queryIntentActivities(
+                                    launcherIntent,
+                                    PackageManager.MATCH_ALL
+                            )
+                    );
+
+            String cleanCommand =
+                    command
+                            .toLowerCase(Locale.ROOT)
+                            .replace("open", "")
+                            .replace("उघड", "")
+                            .replace("उघडा", "")
+                            .replace("उघडं", "")
+                            .replace("कर", "")
+                            .replace("करा", "")
+                            .replace("app", "")
+                            .replace("अॅप", "")
+                            .replace("please", "")
+                            .trim();
+
+            if (cleanCommand.isEmpty()) {
+                return false;
             }
+
+            for (
+                    android.content.pm.ResolveInfo info
+                    : apps
+            ) {
+
+                CharSequence label =
+                        info.loadLabel(pm);
+
+                if (label == null) {
+                    continue;
+                }
+
+                String appName =
+                        label.toString()
+                                .toLowerCase(Locale.ROOT)
+                                .trim();
+
+                if (cleanCommand.equals(appName)
+                        || cleanCommand.contains(appName)
+                        || appName.contains(cleanCommand)) {
+
+                    Intent launchIntent =
+                            pm.getLaunchIntentForPackage(
+                                    info.activityInfo.packageName
+                            );
+
+                    if (launchIntent != null) {
+
+                        launchIntent.addFlags(
+                                Intent.FLAG_ACTIVITY_NEW_TASK
+                        );
+
+                        startActivity(
+                                launchIntent
+                        );
+
+                        reply(
+                                label.toString()
+                                        + " उघडत आहे 📱"
+                        );
+
+                        return true;
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+
+            // Continue to Online AI
         }
 
         return false;
     }
 
-    private boolean openPackage(
+    /*
+     * ==========================================
+     * OPEN APP BY PACKAGE
+     * ==========================================
+     */
+
+    private boolean openAppByPackage(
             String packageName,
             String appName
     ) {
@@ -593,8 +800,8 @@ public class MainActivity extends Activity {
                 startActivity(intent);
 
                 reply(
-                        appName +
-                        " उघडत आहे 📱"
+                        appName
+                                + " उघडत आहे 📱"
                 );
 
                 return true;
@@ -603,13 +810,68 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {
         }
 
-        reply(
-                appName +
-                " app फोनमध्ये सापडली नाही."
-        );
+        return false;
+    }
+
+    /*
+     * ==========================================
+     * HOME SCREEN
+     * ==========================================
+     */
+
+    private void openHomeScreen() {
+
+        try {
+
+            Intent intent =
+                    new Intent(
+                            Intent.ACTION_MAIN
+                    );
+
+            intent.addCategory(
+                    Intent.CATEGORY_HOME
+            );
+
+            intent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+            );
+
+            startActivity(intent);
+
+        } catch (Exception e) {
+
+            reply(
+                    "Home Screen उघडता आली नाही."
+            );
+        }
+    }
+
+    /*
+     * ==========================================
+     * CHECK WORDS
+     * ==========================================
+     */
+
+    private boolean containsAny(
+            String text,
+            String... words
+    ) {
+
+        for (String word : words) {
+
+            if (text.contains(word)) {
+                return true;
+            }
+        }
 
         return false;
     }
+
+    /*
+     * ==========================================
+     * DIALER
+     * ==========================================
+     */
 
     private void openDialer() {
 
@@ -632,9 +894,17 @@ public class MainActivity extends Activity {
         }
     }
 
+    /*
+     * ==========================================
+     * ONLINE AI
+     * ==========================================
+     */
+
     private void askServer(String message) {
 
-        setStatus("Online AI thinking... 🤖");
+        setStatus(
+                "Online AI thinking... 🤖"
+        );
 
         new Thread(() -> {
 
@@ -649,12 +919,21 @@ public class MainActivity extends Activity {
                         (HttpURLConnection)
                                 url.openConnection();
 
-                connection.setRequestMethod("POST");
+                connection.setRequestMethod(
+                        "POST"
+                );
 
-                connection.setConnectTimeout(15000);
-                connection.setReadTimeout(30000);
+                connection.setConnectTimeout(
+                        15000
+                );
 
-                connection.setDoOutput(true);
+                connection.setReadTimeout(
+                        30000
+                );
+
+                connection.setDoOutput(
+                        true
+                );
 
                 connection.setRequestProperty(
                         "Content-Type",
@@ -702,8 +981,11 @@ public class MainActivity extends Activity {
                 String response =
                         readStream(stream);
 
-                final int code = responseCode;
-                final String finalResponse = response;
+                final int code =
+                        responseCode;
+
+                final String finalResponse =
+                        response;
 
                 runOnUiThread(() -> {
 
@@ -714,8 +996,8 @@ public class MainActivity extends Activity {
                         );
 
                         reply(
-                                "Gemini ची सध्याची quota limit संपली आहे. " +
-                                "थोड्या वेळाने पुन्हा try कर bro. ⏳"
+                                "AI quota limit झाली आहे. " +
+                                "थोड्या वेळाने पुन्हा try कर. ⏳"
                         );
 
                         return;
@@ -728,7 +1010,7 @@ public class MainActivity extends Activity {
                         );
 
                         reply(
-                                "Online AI server सध्या busy आहे. " +
+                                "Online AI सध्या busy आहे. " +
                                 "थोड्या वेळाने पुन्हा try कर. 🔄"
                         );
 
@@ -743,8 +1025,8 @@ public class MainActivity extends Activity {
                         );
 
                         reply(
-                                "Online AI Error: HTTP " +
-                                code
+                                "Online AI Error: HTTP "
+                                        + code
                         );
 
                         return;
@@ -761,7 +1043,9 @@ public class MainActivity extends Activity {
                                 finalResponse;
                     }
 
-                    setStatus("Online AI Ready 🤖");
+                    setStatus(
+                            "Online AI Ready 🤖"
+                    );
 
                     reply(answer);
                 });
@@ -788,21 +1072,26 @@ public class MainActivity extends Activity {
                     );
 
                     reply(
-                            "Online AI Error: " +
-                            finalError
+                            "Online AI Error: "
+                                    + finalError
                     );
                 });
 
             } finally {
 
                 if (connection != null) {
-
                     connection.disconnect();
                 }
             }
 
         }).start();
     }
+
+    /*
+     * ==========================================
+     * READ SERVER RESPONSE
+     * ==========================================
+     */
 
     private String readStream(
             InputStream stream
@@ -825,8 +1114,10 @@ public class MainActivity extends Activity {
 
         String line;
 
-        while ((line = reader.readLine())
-                != null) {
+        while (
+                (line = reader.readLine())
+                        != null
+        ) {
 
             result.append(line);
         }
@@ -836,9 +1127,15 @@ public class MainActivity extends Activity {
         return result.toString();
     }
 
+    /*
+     * ==========================================
+     * EXTRACT AI REPLY
+     * ==========================================
+     */
+
     private String extractReply(
             String response
-                         ) {
+    ) {
 
         if (response == null
                 || response.trim().isEmpty()) {
@@ -851,21 +1148,12 @@ public class MainActivity extends Activity {
             JSONObject object =
                     new JSONObject(response);
 
-            /*
-             * Our server normally returns:
-             * {"reply":"..."}
-             */
-
             if (object.has("reply")) {
 
                 return object
                         .optString("reply")
                         .trim();
             }
-
-            /*
-             * Other common response names
-             */
 
             if (object.has("response")) {
 
@@ -894,6 +1182,12 @@ public class MainActivity extends Activity {
         return response.trim();
     }
 
+    /*
+     * ==========================================
+     * CHAT
+     * ==========================================
+     */
+
     private void addChat(
             String message
     ) {
@@ -903,12 +1197,17 @@ public class MainActivity extends Activity {
             if (chat != null) {
 
                 chat.append(
-                        "\n\n" +
-                        message
+                        "\n\n" + message
                 );
             }
         });
     }
+
+    /*
+     * ==========================================
+     * AI REPLY
+     * ==========================================
+     */
 
     private void reply(
             String message
@@ -919,14 +1218,20 @@ public class MainActivity extends Activity {
         }
 
         addChat(
-                "Krushna AI: " +
-                message
+                "Krushna AI: "
+                        + message
         );
 
         setStatus("Ready");
 
         speak(message);
     }
+
+    /*
+     * ==========================================
+     * TEXT TO SPEECH
+     * ==========================================
+     */
 
     private void speak(
             String message
@@ -956,6 +1261,12 @@ public class MainActivity extends Activity {
         }
     }
 
+    /*
+     * ==========================================
+     * STATUS
+     * ==========================================
+     */
+
     private void setStatus(
             String message
     ) {
@@ -966,7 +1277,9 @@ public class MainActivity extends Activity {
 
                 status.setText(message);
 
-                if (message.contains("Listening")) {
+                if (message.contains(
+                        "Listening"
+                )) {
 
                     status.setTextColor(
                             Color.rgb(
@@ -997,4 +1310,5 @@ public class MainActivity extends Activity {
 
         super.onDestroy();
     }
-}
+    }
+                    
