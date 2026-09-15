@@ -287,129 +287,116 @@ public class MainActivity extends Activity {
          * त्यामुळे Gemini quota वाया जाणार नाही.
          */
 
-        if (runHomeCommand(lower)) {
-            return;
-        }
+        private boolean runHomeCommand(String command) {
 
-        /*
-         * Simple local greetings
-         */
-
-        if (lower.equals("hello")
-                || lower.equals("hi")
-                || lower.contains("नमस्कार")
-                || lower.contains("namaskar")) {
-
-            reply("Hello bro 👋 मी Krushna AI आहे. काय करू?");
-            return;
-        }
-
-        /*
-         * Call / dial command
-         */
-
-        if (lower.contains("call")
-                || lower.contains("फोन")
-                || lower.contains("फोन कर")
-                || lower.contains("कॉल")) {
-
-            openDialer();
-
-            reply(
-                    "Phone dialer उघडला आहे. 📞 " +
-                    "Number select करून call करा."
-            );
-
-            return;
-        }
-
-        /*
-         * बाकी प्रश्न Online AI कडे.
-         */
-
-        askServer(command);
+    if (command == null) {
+        return false;
     }
 
-    private boolean runHomeCommand(String command) {
+    String text = command.toLowerCase(Locale.ROOT).trim();
 
-        /*
-         * YouTube
-         */
+    // HOME SCREEN
+    if (containsAny(
+            text,
+            "home",
+            "home screen",
+            "होम",
+            "होम स्क्रीन",
+            "घरी जा"
+    )) {
+        openHomeScreen();
+        return true;
+    }
 
-        if (containsAny(
-                command,
-                "youtube",
-                "यूट्यूब",
-                "युट्युब"
-        )) {
-
-            openPackage(
-                    "com.google.android.youtube",
-                    "YouTube"
-            );
-
-            return true;
+    // CAMERA
+    if (containsAny(text, "camera", "कॅमेरा")) {
+        try {
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            startActivity(intent);
+            reply("Camera उघडत आहे 📷");
+        } catch (Exception e) {
+            reply("Camera उघडता आला नाही.");
         }
+        return true;
+    }
 
-        /*
-         * Chrome
-         */
-
-        if (containsAny(
-                command,
-                "chrome",
-                "क्रोम"
-        )) {
-
-            openPackage(
-                    "com.android.chrome",
-                    "Chrome"
-            );
-
-            return true;
+    // SETTINGS
+    if (containsAny(
+            text,
+            "settings",
+            "setting",
+            "सेटिंग",
+            "सेटिंग्स"
+    )) {
+        try {
+            Intent intent =
+                    new Intent(android.provider.Settings.ACTION_SETTINGS);
+            startActivity(intent);
+            reply("Settings उघडत आहे ⚙️");
+        } catch (Exception e) {
+            reply("Settings उघडता आले नाही.");
         }
+        return true;
+    }
 
-        /*
-         * WhatsApp
-         */
+    // PHONE
+    if (containsAny(
+            text,
+            "phone",
+            "dialer",
+            "फोन",
+            "डायलर"
+    )) {
+        openDialer();
+        reply("Phone उघडत आहे 📞");
+        return true;
+    }
 
-        if (containsAny(
-                command,
-                "whatsapp",
-                "व्हाट्सअप",
-                "व्हॉट्सअॅप"
-        )) {
-
-            openPackage(
-                    "com.whatsapp",
-                    "WhatsApp"
-            );
-
-            return true;
+    // GALLERY / PHOTOS
+    if (containsAny(
+            text,
+            "gallery",
+            "photos",
+            "photo",
+            "गॅलरी",
+            "फोटो"
+    )) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setType("image/*");
+            startActivity(intent);
+            reply("Gallery उघडत आहे 🖼️");
+        } catch (Exception e) {
+            reply("Gallery उघडता आली नाही.");
         }
+        return true;
+    }
 
-        /*
-         * Instagram
-         */
-
-        if (containsAny(
-                command,
-                "instagram",
-                "इंस्टाग्राम"
-        )) {
-
-            openPackage(
-                    "com.instagram.android",
-                    "Instagram"
-            );
-
-            return true;
+    // CALCULATOR
+    if (containsAny(
+            text,
+            "calculator",
+            "calc",
+            "कॅल्क्युलेटर"
+    )) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_APP_CALCULATOR);
+            startActivity(intent);
+            reply("Calculator उघडत आहे 🧮");
+        } catch (Exception e) {
+            reply("Calculator app सापडली नाही.");
         }
+        return true;
+    }
 
-        /*
-         * Settings
-         */
+    // ANY INSTALLED APP
+    if (openAnyInstalledApp(text)) {
+        return true;
+    }
 
+    return false;
+    }
         if (containsAny(
                 command,
                 "settings",
@@ -418,7 +405,10 @@ public class MainActivity extends Activity {
                 "सेटिंग्स"
         )) {
 
-            try {
+            try { 
+                if (openAnyInstalledApp(text)) {
+    return true;
+                }
 
                 Intent intent =
                         new Intent(
