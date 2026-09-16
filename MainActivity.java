@@ -330,17 +330,25 @@ public class MainActivity extends Activity {
     openDialer();
 
     reply(
+ if (lower.contains("call")
+        || lower.contains("फोन कर")
+        || lower.contains("कॉल कर")
+        || lower.contains("call kar")) {
+
+    openDialer();
+
+    reply(
             "Phone dialer उघडला आहे 📞"
     );
 
     return;
-        }
-         * बाकी प्रश्न Online AI कडे.
-         */
+}
 
-        askServer(command);
-    }
+/*
+ * बाकी प्रश्न Online AI कडे.
+ */
 
+askServer(command);
     /*
      * ==========================================
      * HOME + APP COMMANDS
