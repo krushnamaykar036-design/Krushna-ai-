@@ -284,80 +284,56 @@ public class MainActivity extends Activity {
 
     private void handleCommand(String command) {
 
-        if (command == null) {
-            return;
-        }
+    if (command == null) {
+        return;
+    }
 
-        String lower =
-                command.toLowerCase(Locale.ROOT).trim();
+    String lower = command.toLowerCase(Locale.ROOT).trim();
 
-        addChat("You: " + command);
+    addChat("You: " + command);
 
-        /*
-         * HOME / APP COMMANDS FIRST
-         * Gemini quota खर्च होणार नाही.
-         */
+    if (runHomeCommand(lower)) {
+        return;
+    }
 
-        if (runHomeCommand(lower)) {
-            return;
-        }
+    if (lower.equals("hello")
+            || lower.equals("hi")
+            || lower.contains("नमस्कार")
+            || lower.contains("namaskar")) {
 
-        /*
-         * GREETINGS
-         */
+        reply("Hello bro 👋 मी Krushna AI आहे. काय करू?");
+        return;
+    }
 
-        if (lower.equals("hello")
-                || lower.equals("hi")
-                || lower.contains("नमस्कार")
-                || lower.contains("namaskar")) {
+    if (lower.contains("call")
+            || lower.contains("फोन कर")
+            || lower.contains("कॉल कर")
+            || lower.contains("call kar")) {
 
-            reply(
-                    "Hello bro 👋 मी Krushna AI आहे. काय करू?"
-            );
+        openDialer();
 
-            return;
-        } 
-        
-        /*
-         /*
- * CALL / PHONE
- */
+        reply("Phone dialer उघडला आहे 📞");
 
-if (lower.contains("call")
-        || lower.contains("फोन कर")
-        || lower.contains("कॉल कर")
-        || lower.contains("call kar")) {
+        return;
+    }
 
-    openDialer();
-
-    reply(
-            "Phone dialer उघडला आहे 📞"
-    );
-
-    return;
+    askServer(command);
 }
 
 /*
- * बाकी प्रश्न Online AI कडे.
+ * ==========================================
+ * HOME + APP COMMANDS
+ * ==========================================
  */
 
-askServer(command);
-    /*
-     * ==========================================
-     * HOME + APP COMMANDS
-     * ==========================================
-     */
+private boolean runHomeCommand(String command) {
 
-    private boolean runHomeCommand(String command) {
+    if (command == null) {
+        return false;
+    }
 
-        if (command == null) {
-            return false;
-        }
-
-        String text =
-                command.toLowerCase(Locale.ROOT).trim();
-
-
+    String text =
+            command.toLowerCase(Locale.ROOT).trim();
         /*
          * HOME SCREEN
          */
