@@ -323,20 +323,18 @@ public class MainActivity extends Activity {
          */
 
         if (lower.contains("call")
-                || lower.contains("फोन कर")
-                || lower.contains("कॉल कर")
-                || lower.contains("call kar")) {
+        || lower.contains("फोन कर")
+        || lower.contains("कॉल कर")
+        || lower.contains("call kar")) {
 
-            openDialer();
+    openDialer();
 
-            reply(
-                    "Phone dialer उघडला आहे 📞
-                     );
+    reply(
+            "Phone dialer उघडला आहे 📞"
+    );
 
-            return;
+    return;
         }
-
-        /*
          * बाकी प्रश्न Online AI कडे.
          */
 
