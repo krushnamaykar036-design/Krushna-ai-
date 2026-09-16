@@ -316,8 +316,8 @@ public class MainActivity extends Activity {
             );
 
             return;
-        }
-
+        } 
+        
         /*
          /*
  * CALL / PHONE
@@ -356,6 +356,7 @@ askServer(command);
 
         String text =
                 command.toLowerCase(Locale.ROOT).trim();
+
 
         /*
          * HOME SCREEN
