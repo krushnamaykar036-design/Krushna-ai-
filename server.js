@@ -4,6 +4,8 @@ const app = express();
 
 app.use(express.json());
 
+const PORT = process.env.PORT || 3000;
+
 app.get("/", (req, res) => {
   res.send("Krushna AI Server चालू आहे! 🤖");
 });
@@ -43,7 +45,8 @@ app.post("/chat", async (req, res) => {
                     "You are Krushna AI, a helpful AI assistant. " +
                     "Answer clearly and naturally. " +
                     "If the user speaks Marathi, reply in Marathi. " +
-                    "User message: " + message
+                    "User message: " +
+                    message
                 }
               ]
             }
@@ -55,16 +58,16 @@ app.post("/chat", async (req, res) => {
     const data = await response.json();
 
     if (!response.ok) {
-  console.error("Gemini HTTP Error:", response.status);
-  console.error("Gemini Error Data:", data);
+      console.error("Gemini HTTP Error:", response.status);
+      console.error("Gemini Error Data:", data);
 
-  return res.status(500).json({
-    reply:
-      "Gemini Error " +
-      response.status +
-      ": " +
-      (data?.error?.message || "Unknown error")
-  });
+      return res.status(500).json({
+        reply:
+          "Gemini Error " +
+          response.status +
+          ": " +
+          (data?.error?.message || "Unknown error")
+      });
     }
 
     const reply =
@@ -88,8 +91,6 @@ app.post("/chat", async (req, res) => {
     });
   }
 });
-
-const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(
