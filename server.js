@@ -91,7 +91,44 @@ app.post("/chat", async (req, res) => {
     });
   }
 });
+// ===============================
+// Krushna AI Code Command
+// ===============================
 
+app.post("/code", async (req, res) => {
+  try {
+    const command = req.body.command || "";
+
+    if (!command.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Code command द्या."
+      });
+    }
+
+    console.log("Code command received:", command);
+
+    /*
+     * सुरक्षित first version:
+     * command receive करून response देतो.
+     * पुढच्या step मध्ये GitHub update + Actions build जोडू.
+     */
+
+    res.json({
+      success: true,
+      message: "Krushna AI ला code command मिळाली.",
+      command: command
+    });
+
+  } catch (error) {
+    console.error("Code endpoint error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Code system मध्ये error आला."
+    });
+  }
+});
 app.listen(PORT, () => {
   console.log(
     "Krushna AI Server started on port " + PORT
