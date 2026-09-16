@@ -319,18 +319,11 @@ public class MainActivity extends Activity {
         }
 
         /*
-         * CALL / PHONE
-         */
+         /*
+ * CALL / PHONE
+ */
 
-        if (lower.contains("call")
-        || lower.contains("फोन कर")
-        || lower.contains("कॉल कर")
-        || lower.contains("call kar")) {
-
-    openDialer();
-
-    reply(
- if (lower.contains("call")
+if (lower.contains("call")
         || lower.contains("फोन कर")
         || lower.contains("कॉल कर")
         || lower.contains("call kar")) {
