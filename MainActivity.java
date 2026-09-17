@@ -316,7 +316,13 @@ public class MainActivity extends Activity {
 
         return;
     }
+if (lower.startsWith("code ")
+        || lower.startsWith("कोड ")
+        || lower.contains("code command")) {
 
+    sendCodeCommand(command);
+    return;
+}
     askServer(command);
 }
 
@@ -388,6 +394,142 @@ private boolean runHomeCommand(String command) {
         /*
          * SETTINGS
          */
+    /*
+ * ==========================================
+ * CODE COMMAND → RENDER SERVER
+ * ==========================================
+ */
+
+private void sendCodeCommand(String command) {
+
+    setStatus("Code command पाठवत आहे... ⚙️");
+
+    new Thread(() -> {
+
+        HttpURLConnection connection = null;
+
+        try {
+
+            URL url = new URL(
+                    "https://krushna-ai-hseh.onrender.com/code"
+            );
+
+            connection =
+                    (HttpURLConnection) url.openConnection();
+
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty(
+                    "Content-Type",
+                    "application/json"
+            );
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(30000);
+            connection.setDoOutput(true);
+
+            JSONObject json = new JSONObject();
+
+            json.put(
+                    "command",
+                    command
+            );
+
+            OutputStream output =
+                    connection.getOutputStream();
+
+            output.write(
+                    json.toString()
+                            .getBytes(StandardCharsets.UTF_8)
+            );
+
+            output.flush();
+            output.close();
+
+            int responseCode =
+                    connection.getResponseCode();
+
+            InputStream stream;
+
+            if (responseCode >= 200
+                    && responseCode < 300) {
+
+                stream =
+                        connection.getInputStream();
+
+            } else {
+
+                stream =
+                        connection.getErrorStream();
+            }
+
+            BufferedReader reader =
+                    new BufferedReader(
+                            new InputStreamReader(
+                                    stream,
+                                    StandardCharsets.UTF_8
+                            )
+                    );
+
+            StringBuilder result =
+                    new StringBuilder();
+
+            String line;
+
+            while ((line = reader.readLine())
+                    != null) {
+
+                result.append(line);
+            }
+
+            reader.close();
+
+            JSONObject response =
+                    new JSONObject(
+                            result.toString()
+                    );
+
+            String message =
+                    response.optString(
+                            "message",
+                            "Code server response मिळाला."
+                    );
+
+            runOnUiThread(() -> {
+
+                addChat(
+                        "Krushna AI: " + message
+                );
+
+                speak(message);
+
+                setStatus("Ready");
+
+            });
+
+        } catch (Exception e) {
+
+            runOnUiThread(() -> {
+
+                addChat(
+                        "Krushna AI: Code server connection error."
+                );
+
+                speak(
+                        "Code server ला connect होता आले नाही."
+                );
+
+                setStatus("Code error");
+
+            });
+
+        } finally {
+
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+
+    }).start();
+}
 
         if (containsAny(
                 text,
