@@ -1398,53 +1398,10 @@ public class MainActivity extends Activity {
      * ==========================================
      * ONLINE AI CHAT
      * ==========================================
-     */
-
-    private void askServer(
-            String command
-    ) {
-
-        setStatus(
-                "Krushna AI विचार करत आहे... 🤖"
-        );
-
-        new Thread(() -> {
-
-            HttpURLConnection connection =
-                    null;
-
-            try {
-
-                URL url =
-                        new URL(CHAT_URL);
-
-                connection =
-                        (HttpURLConnection)
-                                url.openConnection();
-
-                connection.setRequestMethod(
-                        "POST"
-                );
-
-                connection.setRequestProperty(
-                        "Content-Type",
-                        "application/json"
-                );
-
-                connection.setConnectTimeout(
-                        15000
-                );
-
-                connection.setReadTimeout(
-                        30000
-                );
-
-                connection.setDoOutput(
-                        true
-                );
-
+     */ 
                 JSONObject json =
-                        new JSONObject();
+        
+                 new JSONObject();
 
                 json.put(
                         "message",
