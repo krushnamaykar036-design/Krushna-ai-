@@ -821,12 +821,11 @@ public class MainActivity extends Activity {
                         responseCode < 300) {
 
                     stream =
-                            connection.getInputStream();
+                          connection.getInputStream();
 
                 } else {
 
                     stream =
-                                     stream =
                             connection.getErrorStream();
 
                     if (stream == null) {
@@ -909,3 +908,147 @@ public class MainActivity extends Activity {
 
                     setStatus("Ready");
                 });
+
+            } catch (Exception e) {
+
+                final String error =
+                        e.getMessage() == null
+                                ? "Connection error"
+                                : e.getMessage();
+
+                runOnUiThread(() -> {
+
+                    addChat(
+                            "Krushna: Server error - " +
+                            error
+                    );
+
+                    speak(
+                            "Server connection error."
+                    );
+
+                    setStatus("Ready");
+                });
+
+            } finally {
+
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+
+        }).start();
+    }
+
+    private void reply(String message) {
+
+        addChat(
+                "Krushna: " +
+                message
+        );
+
+        speak(message);
+
+        setStatus("Ready");
+    }
+
+    private void addChat(String message) {
+
+        if (chat == null) {
+            return;
+        }
+
+        if (chat.length() > 0) {
+            chat.append("\n\n");
+        }
+
+        chat.append(message);
+
+        chat.post(() -> {
+
+            View parent =
+                    (View) chat.getParent();
+
+            if (parent instanceof ScrollView) {
+
+                ((ScrollView) parent)
+                        .fullScroll(
+                                View.FOCUS_DOWN
+                        );
+            }
+        });
+    }
+
+    private void speak(String message) {
+
+        if (tts != null &&
+                message != null &&
+                !message.trim().isEmpty()) {
+
+            tts.speak(
+                    message,
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "KRUSHNA_AI"
+            );
+        }
+    }
+
+    private void setStatus(String message) {
+
+        if (status != null) {
+            status.setText(message);
+        }
+    }
+
+    private boolean containsAny(
+            String text,
+            String... values) {
+
+        if (text == null) {
+            return false;
+        }
+
+        String lower =
+                text.toLowerCase(
+                        Locale.ROOT
+                );
+
+        for (String value : values) {
+
+            if (value != null &&
+                    lower.contains(
+                            value.toLowerCase(
+                                    Locale.ROOT
+                            )
+                    )) {
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private int dp(int value) {
+
+        return (int) (
+                value *
+                getResources()
+                        .getDisplayMetrics()
+                        .density
+        );
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        if (tts != null) {
+
+            tts.stop();
+            tts.shutdown();
+        }
+
+        super.onDestroy();
+    }
+        }
