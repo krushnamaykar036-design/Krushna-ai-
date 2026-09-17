@@ -332,43 +332,39 @@ if (lower.startsWith("code ")
  * ==========================================
  */
 
-private boolean runHomeCommand(String command) {
+private boolean runHomeCommand(String 
+            try { 
+    private boolean runHomeCommand(String command) {
 
-    if (command == null) {
-        return false;
-    }
+    // Home
+    // Camera
+    // Settings
+    // Gallery
+    // Calculator
+    // Phone
+    // YouTube
+    // WhatsApp
+    // Instagram
+    // Chrome
+    // All apps
 
-    String text =
-            command.toLowerCase(Locale.ROOT).trim();
-        /*
-         * HOME SCREEN
-         */
+    return false;
+}
 
-        if (containsAny(
-                text,
-                "home screen",
-                "home",
-                "होम स्क्रीन",
-                "होम",
-                "घरी जा"
-        )) {
 
-            openHomeScreen();
+/* CODE COMMAND */
 
-            return true;
-        }
+private void sendCodeCommand(String command) {
 
-        /*
-         * CAMERA
-         */
+    // इथे मी दिलेली पूर्ण sendCodeCommand method
 
-        if (containsAny(
-                text,
-                "camera",
-                "कॅमेरा"
-        )) {
+}
 
-            try {
+
+private boolean openAnyInstalledApp(String command) {
+
+    // existing code
+}
 
                 Intent intent =
                         new Intent(
