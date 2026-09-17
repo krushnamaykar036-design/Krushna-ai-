@@ -334,21 +334,23 @@ if (lower.startsWith("code ")
 
 private boolean runHomeCommand(String 
             try { 
-    private boolean runHomeCommand(String command) {
+    private boolean runHomeCommand(String command) 
 
-    // Home
-    // Camera
-    // Settings
-    // Gallery
-    // Calculator
-    // Phone
-    // YouTube
-    // WhatsApp
-    // Instagram
-    // Chrome
-    // All apps
+    // Home commands...
+    
+}   // ← runHomeCommand इथे संपतो
 
-    return false;
+
+private void sendCodeCommand(String command) {
+
+    // Code command...
+    
+}   // ← sendCodeCommand इथे संपतो
+
+
+private boolean openAnyInstalledApp(String command) {
+
+    // App opening code...
 }
 
 
