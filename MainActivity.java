@@ -323,7 +323,389 @@ public class MainActivity extends Activity {
 
             openDialer();
             return;
-           private void sendCodeCommand(String command) {
+        }
+
+        // HOME COMMANDS
+        if (runHomeCommand(text)) {
+            return;
+        }
+
+        // NORMAL AI CHAT
+        askServer(command);
+    }
+
+    private boolean runHomeCommand(String command) {
+
+        String text = command.toLowerCase(Locale.ROOT);
+
+        // HOME
+        if (containsAny(
+                text,
+                "home",
+                "home screen",
+                "\u0939\u094b\u092e"
+        )) {
+
+            openHomeScreen();
+            return true;
+        }
+
+        // CAMERA
+        if (containsAny(
+                text,
+                "camera",
+                "open camera",
+                "\u0915\u0945\u092e\u0947\u0930\u093e"
+        )) {
+
+            try {
+
+                Intent intent = new Intent(
+                        MediaStore.ACTION_IMAGE_CAPTURE
+                );
+
+                startActivity(intent);
+
+                reply("Opening camera.");
+
+            } catch (Exception e) {
+
+                reply("Camera could not be opened.");
+            }
+
+            return true;
+        }
+
+        // SETTINGS
+        if (containsAny(
+                text,
+                "settings",
+                "open settings",
+                "\u0938\u0947\u091f\u093f\u0902\u0917"
+        )) {
+
+            try {
+
+                Intent intent = new Intent(
+                        Settings.ACTION_SETTINGS
+                );
+
+                startActivity(intent);
+
+                reply("Opening settings.");
+
+            } catch (Exception e) {
+
+                reply("Settings could not be opened.");
+            }
+
+            return true;
+        }
+
+        // GALLERY
+        if (containsAny(
+                text,
+                "gallery",
+                "photos",
+                "photo",
+                "\u0917\u0945\u0932\u0930\u0940",
+                "\u092b\u094b\u091f\u094b"
+        )) {
+
+            try {
+
+                Intent intent = new Intent(
+                        Intent.ACTION_VIEW
+                );
+
+                intent.setType("image/*");
+                intent.addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK
+                );
+
+                startActivity(intent);
+
+                reply("Opening gallery.");
+
+            } catch (Exception e) {
+
+                reply("Gallery could not be opened.");
+            }
+
+            return true;
+        }
+
+        // CALCULATOR
+        if (containsAny(
+                text,
+                "calculator",
+                "calc",
+                "\u0915\u0945\u0932\u094d\u0915\u094d\u092f\u0941\u0932\u0947\u091f\u0930"
+        )) {
+
+            try {
+
+                Intent intent = new Intent(
+                        Intent.ACTION_MAIN
+                );
+
+                intent.addCategory(
+                        Intent.CATEGORY_APP_CALCULATOR
+                );
+
+                startActivity(intent);
+
+                reply("Opening calculator.");
+
+            } catch (Exception e) {
+
+                reply("Calculator could not be opened.");
+            }
+
+            return true;
+        }
+
+        // WHATSAPP
+        if (containsAny(
+                text,
+                "whatsapp"
+        )) {
+
+            if (openAppByPackage(
+                    "com.whatsapp",
+                    "WhatsApp"
+            )) {
+                return true;
+            }
+
+            reply("WhatsApp is not available.");
+            return true;
+        }
+
+        // INSTAGRAM
+        if (containsAny(
+                text,
+                "instagram"
+        )) {
+
+            if (openAppByPackage(
+                    "com.instagram.android",
+                    "Instagram"
+            )) {
+                return true;
+            }
+
+            reply("Instagram is not available.");
+            return true;
+        }
+
+        // YOUTUBE
+        if (containsAny(
+                text,
+                "youtube",
+                "you tube"
+        )) {
+
+            if (openAppByPackage(
+                    "com.google.android.youtube",
+                    "YouTube"
+            )) {
+                return true;
+            }
+
+            try {
+
+                Intent intent = new Intent(
+                        Intent.ACTION_VIEW
+                );
+
+                intent.setData(
+                        android.net.Uri.parse(
+                                "https://www.youtube.com"
+                        )
+                );
+
+                startActivity(intent);
+
+                reply("Opening YouTube.");
+
+            } catch (Exception e) {
+
+                reply("YouTube could not be opened.");
+            }
+
+            return true;
+        }
+
+        // CHROME
+        if (containsAny(
+                text,
+                "chrome",
+                "browser"
+        )) {
+
+            if (openAppByPackage(
+                    "com.android.chrome",
+                    "Chrome"
+            )) {
+                return true;
+            }
+
+            reply("Chrome is not available.");
+            return true;
+        }
+
+        // ANY INSTALLED APP
+        if (text.startsWith("open ") ||
+                text.startsWith("launch ") ||
+                text.startsWith("start ")) {
+
+            if (openAnyInstalledApp(text)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean openAnyInstalledApp(String command) {
+
+        String clean = command
+                .toLowerCase(Locale.ROOT)
+                .replace("open ", "")
+                .replace("launch ", "")
+                .replace("start ", "")
+                .trim();
+
+        PackageManager pm = getPackageManager();
+
+        List<ApplicationInfo> apps =
+                pm.getInstalledApplications(
+                        PackageManager.GET_META_DATA
+                );
+
+        for (ApplicationInfo app : apps) {
+
+            CharSequence labelObject =
+                    pm.getApplicationLabel(app);
+
+            if (labelObject == null) {
+                continue;
+            }
+
+            String label = labelObject
+                    .toString()
+                    .toLowerCase(Locale.ROOT);
+
+            if (clean.equals(label) ||
+                    clean.contains(label)) {
+
+                Intent intent =
+                        pm.getLaunchIntentForPackage(
+                                app.packageName
+                        );
+
+                if (intent != null) {
+
+                    try {
+
+                        startActivity(intent);
+
+                        reply(
+                                "Opening " +
+                                labelObject.toString() +
+                                "."
+                        );
+
+                        return true;
+
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean openAppByPackage(
+            String packageName,
+            String appName) {
+
+        try {
+
+            PackageManager pm =
+                    getPackageManager();
+
+            Intent intent =
+                    pm.getLaunchIntentForPackage(
+                            packageName
+                    );
+
+            if (intent != null) {
+
+                startActivity(intent);
+
+                reply(
+                        "Opening " +
+                        appName +
+                        "."
+                );
+
+                return true;
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return false;
+    }
+
+    private void openHomeScreen() {
+
+        try {
+
+            Intent intent = new Intent(
+                    Intent.ACTION_MAIN
+            );
+
+            intent.addCategory(
+                    Intent.CATEGORY_HOME
+            );
+
+            intent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+            );
+
+            startActivity(intent);
+
+            reply("Going to home screen.");
+
+        } catch (Exception e) {
+
+            reply("Home screen could not be opened.");
+        }
+    }
+
+    private void openDialer() {
+
+        try {
+
+            Intent intent = new Intent(
+                    Intent.ACTION_DIAL
+            );
+
+            startActivity(intent);
+
+            reply("Opening phone dialer.");
+
+        } catch (Exception e) {
+
+            reply("Phone dialer could not be opened.");
+        }
+    }
+
+    private void sendCodeCommand(String command) {
 
         setStatus("Sending code command...");
 
@@ -444,6 +826,7 @@ public class MainActivity extends Activity {
                 } else {
 
                     stream =
+                                     stream =
                             connection.getErrorStream();
 
                     if (stream == null) {
@@ -526,147 +909,3 @@ public class MainActivity extends Activity {
 
                     setStatus("Ready");
                 });
-
-            } catch (Exception e) {
-
-                final String error =
-                        e.getMessage() == null
-                                ? "Connection error"
-                                : e.getMessage();
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna: Server error - " +
-                            error
-                    );
-
-                    speak(
-                            "Server connection error."
-                    );
-
-                    setStatus("Ready");
-                });
-
-            } finally {
-
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            }
-
-        }).start();
-    }
-
-    private void reply(String message) {
-
-        addChat(
-                "Krushna: " +
-                message
-        );
-
-        speak(message);
-
-        setStatus("Ready");
-    }
-
-    private void addChat(String message) {
-
-        if (chat == null) {
-            return;
-        }
-
-        if (chat.length() > 0) {
-            chat.append("\n\n");
-        }
-
-        chat.append(message);
-
-        chat.post(() -> {
-
-            View parent =
-                    (View) chat.getParent();
-
-            if (parent instanceof ScrollView) {
-
-                ((ScrollView) parent)
-                        .fullScroll(
-                                View.FOCUS_DOWN
-                        );
-            }
-        });
-    }
-
-    private void speak(String message) {
-
-        if (tts != null &&
-                message != null &&
-                !message.trim().isEmpty()) {
-
-            tts.speak(
-                    message,
-                    TextToSpeech.QUEUE_FLUSH,
-                    null,
-                    "KRUSHNA_AI"
-            );
-        }
-    }
-
-    private void setStatus(String message) {
-
-        if (status != null) {
-            status.setText(message);
-        }
-    }
-
-    private boolean containsAny(
-            String text,
-            String... values) {
-
-        if (text == null) {
-            return false;
-        }
-
-        String lower =
-                text.toLowerCase(
-                        Locale.ROOT
-                );
-
-        for (String value : values) {
-
-            if (value != null &&
-                    lower.contains(
-                            value.toLowerCase(
-                                    Locale.ROOT
-                            )
-                    )) {
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private int dp(int value) {
-
-        return (int) (
-                value *
-                getResources()
-                        .getDisplayMetrics()
-                        .density
-        );
-    }
-
-    @Override
-    protected void onDestroy() {
-
-        if (tts != null) {
-
-            tts.stop();
-            tts.shutdown();
-        }
-
-        super.onDestroy();
-    }
-}
