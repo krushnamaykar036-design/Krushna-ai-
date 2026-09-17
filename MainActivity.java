@@ -1,16 +1,19 @@
 package com.example.aiassistant;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
+import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -28,11 +31,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
 
     private static final int VOICE_REQUEST = 1001;
+    private static final int MIC_PERMISSION = 1002;
 
     private TextView status;
     private TextView chat;
@@ -53,345 +58,154 @@ public class MainActivity extends Activity {
 
         tts = new TextToSpeech(this, result -> {
             if (result == TextToSpeech.SUCCESS) {
-                int languageResult =
-                        tts.setLanguage(new Locale("mr", "IN"));
+                int r = tts.setLanguage(new Locale("mr", "IN"));
 
-                if (languageResult == TextToSpeech.LANG_MISSING_DATA
-                        || languageResult == TextToSpeech.LANG_NOT_SUPPORTED) {
-
-                    tts.setLanguage(
-                            new Locale("hi", "IN")
-                    );
+                if (r == TextToSpeech.LANG_MISSING_DATA ||
+                        r == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts.setLanguage(Locale.getDefault());
                 }
             }
         });
-    }
 
-    /*
-     * ==========================================
-     * USER INTERFACE
-     * ==========================================
-     */
+        setStatus("Krushna AI Ready");
+
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissions(
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    MIC_PERMISSION
+            );
+        }
+    }
 
     private void buildUI() {
 
-        LinearLayout root =
-                new LinearLayout(this);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(16), dp(16), dp(16), dp(16));
+        root.setBackgroundColor(Color.BLACK);
 
-        root.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        root.setPadding(
-                24,
-                24,
-                24,
-                24
-        );
-
-        GradientDrawable background =
-                new GradientDrawable();
-
-        background.setColor(
-                Color.rgb(10, 10, 10)
-        );
-
-        root.setBackground(background);
-
-        /*
-         * TITLE
-         */
-
-        TextView title =
-                new TextView(this);
-
-        title.setText(
-                "KRUSHNA AI 🤖"
-        );
-
+        TextView title = new TextView(this);
+        title.setText("KRUSHNA AI");
+        title.setTextColor(Color.WHITE);
         title.setTextSize(28);
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, dp(10), 0, dp(10));
 
-        title.setTextColor(
-                Color.WHITE
-        );
-
-        title.setGravity(17);
-
-        title.setPadding(
-                10,
-                20,
-                10,
-                20
-        );
-
-        root.addView(title);
-
-        /*
-         * LOGO
-         */
-
-        TextView logo =
-                new TextView(this);
-
-        logo.setText(
-                "🟠  K R U S H N A  A I  🟠"
-        );
-
-        logo.setTextSize(20);
-
-        logo.setTextColor(
-                Color.rgb(255, 140, 0)
-        );
-
-        logo.setGravity(17);
-
-        logo.setPadding(
-                5,
-                5,
-                5,
-                20
-        );
-
-        root.addView(logo);
-
-        /*
-         * STATUS
-         */
-
-        status =
-                new TextView(this);
-
-        status.setText(
-                "Ready"
-        );
-
-        status.setTextSize(16);
-
-        status.setTextColor(
-                Color.LTGRAY
-        );
-
-        status.setGravity(17);
-
-        status.setPadding(
-                10,
-                10,
-                10,
-                15
-        );
-
-        root.addView(status);
-
-        /*
-         * CHAT AREA
-         */
-
-        ScrollView scrollView =
-                new ScrollView(this);
-
-        chat =
-                new TextView(this);
-
-        chat.setText(
-                "Krushna AI ready आहे. 🤖\n\n" +
-                "Try:\n" +
-                "• YouTube उघड\n" +
-                "• WhatsApp उघड\n" +
-                "• Instagram उघड\n" +
-                "• Chrome उघड\n" +
-                "• Camera उघड\n" +
-                "• Gallery उघड\n" +
-                "• Settings उघड\n" +
-                "• Calculator उघड\n" +
-                "• Home Screen\n" +
-                "• Hello\n"
-        );
-
-        chat.setTextSize(17);
-
-        chat.setTextColor(
-                Color.WHITE
-        );
-
-        chat.setPadding(
-                15,
-                15,
-                15,
-                15
-        );
-
-        scrollView.addView(chat);
-
-        root.addView(
-                scrollView,
+        root.addView(title,
                 new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        -1,
+                        dp(65)
+                ));
+
+        status = new TextView(this);
+        status.setTextColor(Color.LTGRAY);
+        status.setTextSize(15);
+        status.setGravity(Gravity.CENTER);
+        status.setPadding(0, dp(5), 0, dp(10));
+
+        root.addView(status,
+                new LinearLayout.LayoutParams(
+                        -1,
+                        dp(45)
+                ));
+
+        ScrollView scroll = new ScrollView(this);
+
+        chat = new TextView(this);
+        chat.setTextColor(Color.WHITE);
+        chat.setTextSize(17);
+        chat.setPadding(dp(12), dp(12), dp(12), dp(12));
+
+        scroll.addView(chat);
+
+        root.addView(scroll,
+                new LinearLayout.LayoutParams(
+                        -1,
                         0,
                         1
-                )
-        );
+                ));
 
-        /*
-         * TEXT INPUT
-         */
+        input = new EditText(this);
+        input.setTextColor(Color.WHITE);
+        input.setHintTextColor(Color.GRAY);
+        input.setHint("Type your message...");
+        input.setSingleLine(false);
 
-        input =
-                new EditText(this);
-
-        input.setHint(
-                "Type your message..."
-        );
-
-        input.setHintTextColor(
-                Color.GRAY
-        );
-
-        input.setTextColor(
-                Color.WHITE
-        );
-
-        input.setTextSize(16);
-
-        GradientDrawable inputBg =
-                new GradientDrawable();
-
-        inputBg.setColor(
-                Color.rgb(35, 35, 35)
-        );
-
-        inputBg.setCornerRadius(25);
+        GradientDrawable inputBg = new GradientDrawable();
+        inputBg.setColor(Color.rgb(30, 30, 30));
+        inputBg.setCornerRadius(dp(14));
 
         input.setBackground(inputBg);
+        input.setPadding(dp(14), dp(10), dp(14), dp(10));
 
-        input.setPadding(
-                25,
-                10,
-                25,
-                10
-        );
-
-        root.addView(
-                input,
+        root.addView(input,
                 new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        60
-                )
-        );
+                        -1,
+                        dp(55)
+                ));
 
-        /*
-         * BUTTONS
-         */
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        buttons.setGravity(Gravity.CENTER);
 
-        LinearLayout buttons =
-                new LinearLayout(this);
+        Button mic = new Button(this);
+        mic.setText("MIC");
+        mic.setTextColor(Color.WHITE);
 
-        buttons.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
+        Button send = new Button(this);
+        send.setText("SEND");
+        send.setTextColor(Color.WHITE);
 
-        buttons.setGravity(17);
-
-        buttons.setPadding(
-                0,
-                12,
-                0,
-                0
-        );
-
-        Button sendButton =
-                new Button(this);
-
-        sendButton.setText(
-                "SEND"
-        );
-
-        sendButton.setTextColor(
-                Color.WHITE
-        );
-
-        Button micButton =
-                new Button(this);
-
-        micButton.setText(
-                "🎤 MIC"
-        );
-
-        micButton.setTextColor(
-                Color.WHITE
-        );
-
-        buttons.addView(
-                sendButton,
+        buttons.addView(mic,
                 new LinearLayout.LayoutParams(
                         0,
-                        60,
+                        dp(55),
                         1
-                )
-        );
+                ));
 
-        buttons.addView(
-                micButton,
+        buttons.addView(send,
                 new LinearLayout.LayoutParams(
                         0,
-                        60,
+                        dp(55),
                         1
-                )
-        );
+                ));
 
         root.addView(buttons);
 
-        /*
-         * SEND
-         */
-
-        sendButton.setOnClickListener(v -> {
-
-            String message =
-                    input.getText()
-                            .toString()
-                            .trim();
-
-            if (message.isEmpty()) {
-
-                Toast.makeText(
-                        this,
-                        "Message type कर bro 😄",
-                        Toast.LENGTH_SHORT
-                ).show();
-
-                return;
-            }
-
-            input.setText("");
-
-            handleCommand(message);
-        });
-
-        /*
-         * MIC
-         */
-
-        micButton.setOnClickListener(
-                v -> startVoice()
-        );
-
         setContentView(root);
-    }
 
-    /*
-     * ==========================================
-     * VOICE INPUT
-     * ==========================================
-     */
+        mic.setOnClickListener(v -> startVoice());
+
+        send.setOnClickListener(v -> {
+            String text = input.getText().toString().trim();
+
+            if (!text.isEmpty()) {
+                handleCommand(text);
+                input.setText("");
+            }
+        });
+    }
 
     private void startVoice() {
 
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissions(
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    MIC_PERMISSION
+            );
+
+            return;
+        }
+
         try {
 
-            Intent intent =
-                    new Intent(
-                            RecognizerIntent.ACTION_RECOGNIZE_SPEECH
-                    );
+            Intent intent = new Intent(
+                    RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+            );
 
             intent.putExtra(
                     RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -405,29 +219,21 @@ public class MainActivity extends Activity {
 
             intent.putExtra(
                     RecognizerIntent.EXTRA_PROMPT,
-                    "Krushna AI ला command बोला"
+                    "Speak to Krushna AI"
             );
 
-            startActivityForResult(
-                    intent,
-                    VOICE_REQUEST
-            );
+            setStatus("Listening...");
 
-            setStatus(
-                    "Listening... 🎤"
-            );
+            startActivityForResult(intent, VOICE_REQUEST);
 
         } catch (Exception e) {
 
+            setStatus("Voice input unavailable");
             Toast.makeText(
                     this,
-                    "Voice recognition available नाही",
-                    Toast.LENGTH_LONG
+                    "Voice input not available",
+                    Toast.LENGTH_SHORT
             ).show();
-
-            setStatus(
-                    "Voice unavailable"
-            );
         }
     }
 
@@ -435,8 +241,7 @@ public class MainActivity extends Activity {
     protected void onActivityResult(
             int requestCode,
             int resultCode,
-            Intent data
-    ) {
+            Intent data) {
 
         super.onActivityResult(
                 requestCode,
@@ -444,1243 +249,381 @@ public class MainActivity extends Activity {
                 data
         );
 
-        if (requestCode == VOICE_REQUEST
-                && resultCode == RESULT_OK
-                && data != null) {
+        if (requestCode == VOICE_REQUEST &&
+                resultCode == RESULT_OK &&
+                data != null) {
 
             ArrayList<String> results =
                     data.getStringArrayListExtra(
                             RecognizerIntent.EXTRA_RESULTS
                     );
 
-            if (results != null
-                    && !results.isEmpty()) {
+            if (results != null &&
+                    !results.isEmpty()) {
 
-                String command =
-                        results.get(0);
+                String command = results.get(0);
 
-                input.setText(
-                        command
-                );
+                input.setText(command);
 
-                handleCommand(
-                        command
-                );
+                handleCommand(command);
             }
         }
+
+        setStatus("Ready");
     }
 
-    /*
-     * ==========================================
-     * MAIN COMMAND HANDLER
-     * ==========================================
-     */
-
-    private void handleCommand(
-            String command
-    ) {
+    private void handleCommand(String command) {
 
         if (command == null) {
             return;
         }
 
-        String lower =
-                command
-                        .toLowerCase(Locale.ROOT)
-                        .trim();
+        String text = command
+                .trim()
+                .toLowerCase(Locale.ROOT);
 
-        addChat(
-                "You: " + command
-        );
-
-        /*
-         * CODE COMMAND
-         */
-
-        if (lower.startsWith("code ")
-                || lower.startsWith("कोड ")
-                || lower.contains("code command")) {
-
-            sendCodeCommand(
-                    command
-            );
-
+        if (text.isEmpty()) {
             return;
         }
 
-        /*
-         * HOME / APP COMMANDS
-         */
+        addChat("You: " + command);
 
-        if (runHomeCommand(lower)) {
+        // CODE COMMAND
+        if (text.startsWith("code ") ||
+                text.startsWith("\u0915\u094b\u0921 ") ||
+                text.contains("code command")) {
+
+            sendCodeCommand(command);
             return;
         }
 
-        /*
-         * GREETING
-         */
+        // GREETING
+        if (containsAny(
+                text,
+                "hello",
+                "hi krushna",
+                "hello krushna",
+                "\u0939\u0945\u0932\u094b \u0915\u0943\u0937\u094d\u0923\u093e",
+                "\u0928\u092e\u0938\u094d\u0915\u093e\u0930"
+        )) {
 
-        if (lower.equals("hello")
-                || lower.equals("hi")
-                || lower.contains("नमस्कार")
-                || lower.contains("namaskar")
-                || lower.contains("हॅलो")
-                || lower.contains("hello krushna")
-                || lower.contains("hello krishna")) {
-
-            reply(
-                    "Hello bro 👋 मी Krushna AI आहे. काय करू?"
-            );
-
+            reply("Hello! I am Krushna AI. How can I help you?");
             return;
         }
 
-        /*
-         * CALL / PHONE
-         */
-
-        if (lower.contains("call")
-                || lower.contains("फोन कर")
-                || lower.contains("कॉल कर")
-                || lower.contains("call kar")) {
-
-            openDialer();
-
-            reply(
-                    "Phone dialer उघडला आहे 📞"
-            );
-
-            return;
-        }
-
-        /*
-         * ONLINE AI
-         */
-
-        askServer(command);
-    }
-
-    /*
-     * ==========================================
-     * HOME + APP COMMANDS
-     * ==========================================
-     */
-
-    private boolean runHomeCommand(
-            String text
-    ) {
-
-        /*
-         * HOME SCREEN
-         */
-
+        // CALL / PHONE
         if (containsAny(
                 text,
-                "home screen",
-                "home",
-                "होम स्क्रीन",
-                "होम"
-        )) {
-
-            openHomeScreen();
-
-            reply(
-                    "Home Screen उघडत आहे 🏠"
-            );
-
-            return true;
-        }
-
-        /*
-         * CAMERA
-         */
-
-        if (containsAny(
-                text,
-                "camera",
-                "कॅमेरा"
-        )) {
-
-            try {
-
-                Intent intent =
-                        new Intent(
-                                MediaStore.ACTION_IMAGE_CAPTURE
-                        );
-
-                startActivity(intent);
-
-                reply(
-                        "Camera उघडत आहे 📷"
-                );
-
-            } catch (Exception e) {
-
-                reply(
-                        "Camera उघडता आला नाही."
-                );
-            }
-
-            return true;
-        }
-
-        /*
-         * SETTINGS
-         */
-
-        if (containsAny(
-                text,
-                "settings",
-                "setting",
-                "सेटिंग",
-                "सेटिंग्स"
-        )) {
-
-            try {
-
-                Intent intent =
-                        new Intent(
-                                Settings.ACTION_SETTINGS
-                        );
-
-                startActivity(intent);
-
-                reply(
-                        "Settings उघडत आहे ⚙️"
-                );
-
-            } catch (Exception e) {
-
-                reply(
-                        "Settings उघडता आले नाही."
-                );
-            }
-
-            return true;
-        }
-
-        /*
-         * GALLERY
-         */
-
-        if (containsAny(
-                text,
-                "gallery",
-                "photos",
-                "photo",
-                "गॅलरी",
-                "फोटो"
-        )) {
-
-            try {
-
-                Intent intent =
-                        new Intent(
-                                Intent.ACTION_VIEW
-                        );
-
-                intent.setType(
-                        "image/*"
-                );
-
-                startActivity(intent);
-
-                reply(
-                        "Gallery उघडत आहे 🖼️"
-                );
-
-            } catch (Exception e) {
-
-                reply(
-                        "Gallery उघडता आली नाही."
-                );
-            }
-
-            return true;
-        }
-
-        /*
-         * CALCULATOR
-         */
-
-        if (containsAny(
-                text,
-                "calculator",
-                "calc",
-                "कॅल्क्युलेटर"
-        )) {
-
-            try {
-
-                Intent intent =
-                        new Intent(
-                                Intent.ACTION_MAIN
-                        );
-
-                intent.addCategory(
-                        Intent.CATEGORY_APP_CALCULATOR
-                );
-
-                startActivity(intent);
-
-                reply(
-                        "Calculator उघडत आहे 🧮"
-                );
-
-            } catch (Exception e) {
-
-                reply(
-                        "Calculator app सापडली नाही."
-                );
-            }
-
-            return true;
-        }
-
-        /*
-         * PHONE
-         */
-
-        if (containsAny(
-                text,
+                "call",
                 "phone",
-                "dialer",
-                "फोन",
-                "डायलर"
+                "dial",
+                "\u0915\u0949\u0932",
+                "\u092b\u094b\u0928"
         )) {
 
             openDialer();
+            return;
+           private void sendCodeCommand(String command) {
 
-            reply(
-                    "Phone उघडत आहे 📞"
-            );
-
-            return true;
-        }
-
-        /*
-         * YOUTUBE
-         */
-
-        if (containsAny(
-                text,
-                "youtube",
-                "यूट्यूब",
-                "युट्युब"
-        )) {
-
-            if (openAppByPackage(
-                    "com.google.android.youtube",
-                    "YouTube"
-            )) {
-
-                return true;
-            }
-
-            try {
-
-                Intent intent =
-                        new Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse(
-                                        "https://www.youtube.com"
-                                )
-                        );
-
-                startActivity(intent);
-
-                reply(
-                        "YouTube उघडत आहे ▶️"
-                );
-
-            } catch (Exception e) {
-
-                reply(
-                        "YouTube उघडता आले नाही."
-                );
-            }
-
-            return true;
-        }
-
-        /*
-         * WHATSAPP
-         */
-
-        if (containsAny(
-                text,
-                "whatsapp",
-                "व्हाट्सअप",
-                "व्हॉट्सअॅप"
-        )) {
-
-            if (openAppByPackage(
-                    "com.whatsapp",
-                    "WhatsApp"
-            )) {
-
-                return true;
-            }
-
-            reply(
-                    "WhatsApp app सापडली नाही."
-            );
-
-            return true;
-        }
-
-        /*
-         * INSTAGRAM
-         */
-
-        if (containsAny(
-                text,
-                "instagram",
-                "इंस्टाग्राम"
-        )) {
-
-            if (openAppByPackage(
-                    "com.instagram.android",
-                    "Instagram"
-            )) {
-
-                return true;
-            }
-
-            reply(
-                    "Instagram app सापडली नाही."
-            );
-
-            return true;
-        }
-
-        /*
-         * CHROME
-         */
-
-        if (containsAny(
-                text,
-                "chrome",
-                "क्रोम"
-        )) {
-
-            if (openAppByPackage(
-                    "com.android.chrome",
-                    "Chrome"
-            )) {
-
-                return true;
-            }
-
-            try {
-
-                Intent intent =
-                        new Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse(
-                                        "https://www.google.com"
-                                )
-                        );
-
-                startActivity(intent);
-
-                reply(
-                        "Chrome उघडत आहे 🌐"
-                );
-
-            } catch (Exception e) {
-
-                reply(
-                        "Chrome उघडता आला नाही."
-                );
-            }
-
-            return true;
-        }
-
-        /*
-         * ANY INSTALLED APP
-         */
-
-        if (openAnyInstalledApp(text)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /*
-     * ==========================================
-     * OPEN ANY INSTALLED APP
-     * ==========================================
-     */
-
-    private boolean openAnyInstalledApp(
-            String command
-    ) {
+        setStatus("Sending code command...");
 
         try {
 
-            PackageManager pm =
-                    getPackageManager();
+            JSONObject body = new JSONObject();
 
-            Intent launcherIntent =
-                    new Intent(
-                            Intent.ACTION_MAIN
-                    );
-
-            launcherIntent.addCategory(
-                    Intent.CATEGORY_LAUNCHER
-            );
-
-            ArrayList<android.content.pm.ResolveInfo> apps =
-                    new ArrayList<>(
-                            pm.queryIntentActivities(
-                                    launcherIntent,
-                                    PackageManager.MATCH_ALL
-                            )
-                    );
-
-            String cleanCommand =
+            body.put(
+                    "command",
                     command
-                            .toLowerCase(Locale.ROOT)
-                            .replace("open", "")
-                            .replace("उघड", "")
-                            .replace("उघडा", "")
-                            .replace("उघडं", "")
-                            .replace("कर", "")
-                            .replace("करा", "") 
-                .trim();
+            );
 
-            if (cleanCommand.isEmpty()) {
-                return false;
-            }
-
-            for (
-                    android.content.pm.ResolveInfo info
-                    : apps
-            ) {
-
-                CharSequence label =
-                        info.loadLabel(pm);
-
-                if (label == null) {
-                    continue;
-                }
-
-                String appName =
-                        label.toString()
-                                .toLowerCase(
-                                        Locale.ROOT
-                                )
-                                .trim();
-
-                if (appName.equals(cleanCommand)
-                        || cleanCommand.contains(appName)
-                        || appName.contains(cleanCommand)) {
-
-                    Intent launchIntent =
-                            pm.getLaunchIntentForPackage(
-                                    info.activityInfo.packageName
-                            );
-
-                    if (launchIntent != null) {
-
-                        launchIntent.addFlags(
-                                Intent.FLAG_ACTIVITY_NEW_TASK
-                        );
-
-                        startActivity(
-                                launchIntent
-                        );
-
-                        reply(
-                                label + " उघडत आहे 📱"
-                        );
-
-                        return true;
-                    }
-                }
-            }
+            postJson(
+                    CODE_URL,
+                    body,
+                    true
+            );
 
         } catch (Exception e) {
 
-            // Ignore and continue
+            reply("Code command error.");
+            setStatus("Ready");
         }
-
-        return false;
     }
 
-    /*
-     * ==========================================
-     * OPEN APP BY PACKAGE
-     * ==========================================
-     */
+    private void askServer(String command) {
 
-    private boolean openAppByPackage(
-            String packageName,
-            String appName
-    ) {
+        setStatus("Thinking...");
 
         try {
 
-            PackageManager pm =
-                    getPackageManager();
+            JSONObject body = new JSONObject();
 
-            Intent intent =
-                    pm.getLaunchIntentForPackage(
-                            packageName
-                    );
-
-            if (intent != null) {
-
-                intent.addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK
-                );
-
-                startActivity(intent);
-
-                reply(
-                        appName +
-                                " उघडत आहे 📱"
-                );
-
-                return true;
-            }
-
-        } catch (Exception e) {
-
-            // Ignore
-        }
-
-        return false;
-    }
-
-    /*
-     * ==========================================
-     * HOME SCREEN
-     * ==========================================
-     */
-
-    private void openHomeScreen() {
-
-        try {
-
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_MAIN
-                    );
-
-            intent.addCategory(
-                    Intent.CATEGORY_HOME
-            );
-
-            intent.addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK
-            );
-
-            startActivity(intent);
-
-        } catch (Exception e) {
-
-            reply(
-                    "Home Screen उघडता आली नाही."
-            );
-        }
-    }
-
-    /*
-     * ==========================================
-     * PHONE DIALER
-     * ==========================================
-     */
-
-    private void openDialer() {
-
-        try {
-
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_DIAL
-                    );
-
-            startActivity(intent);
-
-        } catch (Exception e) {
-
-            reply(
-                    "Phone dialer उघडता आला नाही."
-            );
-        }
-    }
-
-    /*
-     * ==========================================
-     * CODE COMMAND → RENDER SERVER
-     * ==========================================
-     */
-
-    private void sendCodeCommand(
-            String command
-    ) {
-
-        setStatus(
-                "Code command पाठवत आहे... ⚙️"
-        );
-
-        new Thread(() -> {
-
-            HttpURLConnection connection =
-                    null;
-
-            try {
-
-                URL url =
-                        new URL(CODE_URL);
-
-                connection =
-                        (HttpURLConnection)
-                                url.openConnection();
-
-                connection.setRequestMethod(
-                        "POST"
-                );
-
-                connection.setRequestProperty(
-                        "Content-Type",
-                        "application/json"
-                );
-
-                connection.setConnectTimeout(
-                        15000
-                );
-
-                connection.setReadTimeout(
-                        30000
-                );
-
-                connection.setDoOutput(
-                        true
-                );
-
-                JSONObject json =
-                        new JSONObject();
-
-                json.put(
-                        "command",
-                        command
-                );
-
-                OutputStream output =
-                        connection.getOutputStream();
-
-                output.write(
-                        json.toString()
-                                .getBytes(
-                                        StandardCharsets.UTF_8
-                                )
-                );
-
-                output.flush();
-                output.close();
-
-                int responseCode =
-                        connection.getResponseCode();
-
-                InputStream stream;
-
-                if (responseCode >= 200
-                        && responseCode < 300) {
-
-                    stream =
-                            connection.getInputStream();
-
-                } else {
-
-                    stream =
-                            connection.getErrorStream();
-                }
-
-                String result =
-                        readStream(stream);
-
-                JSONObject response =
-                        new JSONObject(result);
-
-                String message =
-                        response.optString(
-                                "message",
-                                "Code server response मिळाला."
-                        );
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna AI: " +
-                                    message
-                    );
-
-                    speak(message);
-
-                    setStatus(
-                            "Ready"
-                    );
-                });
-
-            } catch (Exception e) {
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna AI: Code server connection error."
-                    );
-
-                    speak(
-                            "Code server ला connect होता आले नाही."
-                    );
-
-                    setStatus(
-                            "Code error"
-                    );
-                });
-
-            } finally {
-
-                if (connection != null) {
-
-                    connection.disconnect();
-                }
-            }
-
-        }).start();
-    }
-
-    /*
-     * ==========================================
-     * ONLINE AI CHAT
-     * ==========================================
-     */
-
-    private void askServer(
-            String command
-    ) {
-
-        setStatus(
-                "Krushna AI विचार करत आहे... 🤖"
-        );
-
-        new Thread(() -> {
-
-            HttpURLConnection connection =
-                    null;
-
-            try {
-
-                URL url =
-                        new URL(CHAT_URL);
-
-                connection =
-                        (HttpURLConnection)
-                                url.openConnection();
-
-                connection.setRequestMethod(
-                        "POST"
-                );
-
-                connection.setRequestProperty(
-                        "Content-Type",
-                        "application/json"
-                );
-
-                connection.setConnectTimeout(
-                        15000
-                );
-
-                connection.setReadTimeout(
-                        30000
-                );
-
-                connection.setDoOutput(
-                        true
-                );
-
-                JSONObject json =
-                        new JSONObject();
-
-                json.put(
-                        "message",
-                        command
-                );
-
-                json.put(
-                        "command",
-                        command
-                );
-
-                OutputStream output =
-                        connection.getOutputStream();
-
-                output.write(
-                        json.toString()
-                                .getBytes(
-                                        StandardCharsets.UTF_8
-                                )
-                );
-
-                output.flush();
-                output.close();
-
-                int responseCode =
-                        connection.getResponseCode();
-
-                InputStream stream;
-
-                if (responseCode >= 200
-                        && responseCode < 300) {
-
-                    stream =
-                            connection.getInputStream();
-
-                } else {
-
-                    stream =
-                            connection.getErrorStream();
-                }
-
-                String result =
-                        readStream(stream);
-
-                String replyText =
-                        extractReply(result);
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna AI: " +
-                                    replyText
-                    );
-
-                    speak(replyText);
-
-                    setStatus(
-                            "Ready"
-                    );
-                });
-
-            } catch (Exception e) {
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna AI: Online AI connect होता आले नाही."
-                    );
-
-                    speak(
-                            "Online AI ला connect होता आले नाही."
-                    );
-
-                    setStatus(
-                            "AI connection error"
-                    );
-                });
-
-            } finally {
-
-                if (connection != null) {
-
-                    connection.disconnect();
-                }
-                              } 
-            }).start();
-    }
-
-    /*
-     * ==========================================
-     * ONLINE AI CHAT
-     * ==========================================
-     */ 
-                JSONObject json =
-    new JSONObject();
-
-                json.put(
-                        "message",
-                        command
-                );
-
-                json.put(
-                        "command",
-                        command
-                );
-
-                OutputStream output =
-                        connection.getOutputStream();
-
-                output.write(
-                        json.toString()
-                                .getBytes(
-                                        StandardCharsets.UTF_8
-                                )
-                );
-
-                output.flush();
-                output.close();
-
-                int responseCode =
-                        connection.getResponseCode();
-
-                InputStream stream;
-
-                if (responseCode >= 200
-                        && responseCode < 300) {
-
-                    stream =
-                            connection.getInputStream();
-
-                } else {
-
-                    stream =
-                            connection.getErrorStream();
-                }
-
-                String result =
-                        readStream(stream);
-
-                String replyText =
-                        extractReply(result);
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna AI: " +
-                                    replyText
-                    );
-
-                    speak(replyText);
-
-                    setStatus(
-                            "Ready"
-                    );
-                });
-
-            } catch (Exception e) {
-
-                runOnUiThread(() -> {
-
-                    addChat(
-                            "Krushna AI: Online AI connect होता आले नाही."
-                    );
-
-                    speak(
-                            "Online AI ला connect होता आले नाही."
-                    );
-
-                    setStatus(
-                            "AI connection error"
-                    );
-                });
-
-            } finally {
-
-                if (connection != null) {
-
-                    connection.disconnect();
-                }
-            }
-
-        }).start();
-    }
-
-    /*
-     * ==========================================
-     * READ SERVER RESPONSE
-     * ==========================================
-     */
-
-    private String readStream(
-            InputStream stream
-    ) throws Exception {
-
-        if (stream == null) {
-
-            return "";
-        }
-
-        BufferedReader reader =
-                new BufferedReader(
-                        new InputStreamReader(
-                                stream,
-                                StandardCharsets.UTF_8
-                        )
-                );
-
-        StringBuilder result =
-                new StringBuilder();
-
-        String line;
-
-        while (
-                (line = reader.readLine())
-                        != null
-        ) {
-
-            result.append(line);
-        }
-
-        reader.close();
-
-        return result.toString();
-    }
-
-    /*
-     * ==========================================
-     * EXTRACT AI REPLY
-     * ==========================================
-     */
-    private String extractReply(
-            String result
-    ) {
-
-        try {
-
-            JSONObject json =
-                    new JSONObject(result);
-
-            String[] possibleKeys = {
-                    "reply",
-                    "response",
+            body.put(
                     "message",
-                    "text",
-                    "answer"
-            };
+                    command
+            );
 
-            for (String key :
-                    possibleKeys) {
-
-                if (json.has(key)) {
-
-                    String value =
-                            json.optString(
-                                    key,
-                                    ""
-                            );
-
-                    if (!value.isEmpty()) {
-
-                        return value;
-                    }
-                }
-            }
-
-            return result;
+            postJson(
+                    CHAT_URL,
+                    body,
+                    false
+            );
 
         } catch (Exception e) {
 
-            return result;
+            reply("AI request error.");
+            setStatus("Ready");
         }
     }
 
-    /*
-     * ==========================================
-     * CHAT
-     * ==========================================
-     */
+    private void postJson(
+            String urlString,
+            JSONObject body,
+            boolean codeRequest) {
 
-    private void addChat(
-            String message
-    ) {
+        new Thread(() -> {
 
-        runOnUiThread(() -> {
+            HttpURLConnection connection = null;
 
-            if (chat != null) {
+            try {
 
-                chat.append(
-                        "\n\n" + message
+                URL url =
+                        new URL(urlString);
+
+                connection =
+                        (HttpURLConnection)
+                                url.openConnection();
+
+                connection.setRequestMethod(
+                        "POST"
                 );
+
+                connection.setConnectTimeout(
+                        20000
+                );
+
+                connection.setReadTimeout(
+                        30000
+                );
+
+                connection.setDoOutput(true);
+
+                connection.setRequestProperty(
+                        "Content-Type",
+                        "application/json"
+                );
+
+                connection.setRequestProperty(
+                        "Accept",
+                        "application/json"
+                );
+
+                byte[] data =
+                        body.toString()
+                                .getBytes(
+                                        StandardCharsets.UTF_8
+                                );
+
+                OutputStream output =
+                        connection.getOutputStream();
+
+                output.write(data);
+                output.flush();
+                output.close();
+
+                int responseCode =
+                        connection.getResponseCode();
+
+                InputStream stream;
+
+                if (responseCode >= 200 &&
+                        responseCode < 300) {
+
+                    stream =
+                            connection.getInputStream();
+
+                } else {
+
+                    stream =
+                            connection.getErrorStream();
+
+                    if (stream == null) {
+
+                        throw new Exception(
+                                "HTTP " +
+                                responseCode
+                        );
+                    }
+                }
+
+                BufferedReader reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        stream,
+                                        StandardCharsets.UTF_8
+                                )
+                        );
+
+                StringBuilder result =
+                        new StringBuilder();
+
+                String line;
+
+                while ((line = reader.readLine())
+                        != null) {
+
+                    result.append(line);
+                }
+
+                reader.close();
+
+                String raw =
+                        result.toString();
+
+                JSONObject json =
+                        new JSONObject(raw);
+
+                String answer = "";
+
+                if (json.has("reply")) {
+
+                    answer =
+                            json.optString(
+                                    "reply"
+                            );
+
+                } else if (json.has("response")) {
+
+                    answer =
+                            json.optString(
+                                    "response"
+                            );
+
+                } else if (json.has("message")) {
+
+                    answer =
+                            json.optString(
+                                    "message"
+                            );
+                }
+
+                if (answer == null ||
+                        answer.trim().isEmpty()) {
+
+                    answer = raw;
+                }
+
+                final String finalAnswer =
+                        answer;
+
+                runOnUiThread(() -> {
+
+                    addChat(
+                            "Krushna: " +
+                            finalAnswer
+                    );
+
+                    speak(finalAnswer);
+
+                    setStatus("Ready");
+                });
+
+            } catch (Exception e) {
+
+                final String error =
+                        e.getMessage() == null
+                                ? "Connection error"
+                                : e.getMessage();
+
+                runOnUiThread(() -> {
+
+                    addChat(
+                            "Krushna: Server error - " +
+                            error
+                    );
+
+                    speak(
+                            "Server connection error."
+                    );
+
+                    setStatus("Ready");
+                });
+
+            } finally {
+
+                if (connection != null) {
+                    connection.disconnect();
+                }
             }
-        });
+
+        }).start();
     }
 
-    /*
-     * ==========================================
-     * REPLY
-     * ==========================================
-     */
-
-    private void reply(
-            String message
-    ) {
+    private void reply(String message) {
 
         addChat(
-                "Krushna AI: " +
-                        message
+                "Krushna: " +
+                message
         );
 
         speak(message);
 
-        setStatus(
-                "Ready"
-        );
+        setStatus("Ready");
     }
 
-    /*
-     * ==========================================
-     * TEXT TO SPEECH
-     * ==========================================
-     */
+    private void addChat(String message) {
 
-    private void speak(
-            String message
-    ) {
-
-        if (tts == null
-                || message == null
-                || message.isEmpty()) {
-
+        if (chat == null) {
             return;
         }
 
-        tts.speak(
-                message,
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                "KRUSHNA_AI"
-        );
-    }
+        if (chat.length() > 0) {
+            chat.append("\n\n");
+        }
 
-    /*
-     * ==========================================
-     * STATUS
-     * ==========================================
-     */
+        chat.append(message);
 
-    private void setStatus(
-            String message
-    ) {
+        chat.post(() -> {
 
-        runOnUiThread(() -> {
+            View parent =
+                    (View) chat.getParent();
 
-            if (status != null) {
+            if (parent instanceof ScrollView) {
 
-                status.setText(
-                        message
-                );
+                ((ScrollView) parent)
+                        .fullScroll(
+                                View.FOCUS_DOWN
+                        );
             }
         });
     }
 
-    /*
-     * ==========================================
-     * TEXT MATCH
-     * ==========================================
-     */
+    private void speak(String message) {
+
+        if (tts != null &&
+                message != null &&
+                !message.trim().isEmpty()) {
+
+            tts.speak(
+                    message,
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "KRUSHNA_AI"
+            );
+        }
+    }
+
+    private void setStatus(String message) {
+
+        if (status != null) {
+            status.setText(message);
+        }
+    }
 
     private boolean containsAny(
             String text,
-            String... words
-    ) {
+            String... values) {
 
         if (text == null) {
-
             return false;
         }
 
@@ -1689,14 +632,14 @@ public class MainActivity extends Activity {
                         Locale.ROOT
                 );
 
-        for (String word :
-                words) {
+        for (String value : values) {
 
-            if (lower.contains(
-                    word.toLowerCase(
-                            Locale.ROOT
-                    )
-            )) {
+            if (value != null &&
+                    lower.contains(
+                            value.toLowerCase(
+                                    Locale.ROOT
+                            )
+                    )) {
 
                 return true;
             }
@@ -1705,11 +648,15 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    /*
-     * ==========================================
-     * DESTROY
-     * ==========================================
-     */
+    private int dp(int value) {
+
+        return (int) (
+                value *
+                getResources()
+                        .getDisplayMetrics()
+                        .density
+        );
+    }
 
     @Override
     protected void onDestroy() {
@@ -1723,6 +670,3 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 }
-    
-            
- 
