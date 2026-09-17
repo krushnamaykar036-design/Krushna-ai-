@@ -1400,8 +1400,7 @@ public class MainActivity extends Activity {
      * ==========================================
      */ 
                 JSONObject json =
-        
-                 new JSONObject();
+    new JSONObject();
 
                 json.put(
                         "message",
