@@ -1044,11 +1044,10 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
 
         if (tts != null) {
-
             tts.stop();
             tts.shutdown();
         }
 
         super.onDestroy();
     }
-        }
+}
