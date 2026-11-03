@@ -1,4 +1,4 @@
-package com.example.aiassistant;
+
 package com.example.aiassistant;
 
 import android.app.Notification;
@@ -38,7 +38,7 @@ public class HomeVoiceService extends Service {
         Notification notification =
                 new Notification.Builder(this, CHANNEL_ID)
                         .setContentTitle("KRUSHNA AI")
-                        .setContentText("RED DEVIL • Voice Assistant Active")
+                        .setContentText("RED DEVIL - Voice Assistant Active")
                         .setSmallIcon(android.R.drawable.ic_btn_speak_now)
                         .setOngoing(true)
                         .build();
@@ -239,17 +239,19 @@ public class HomeVoiceService extends Service {
     }
 
     private void createNotificationChannel() {
-        NotificationChannel channel =
-                new NotificationChannel(
-                        CHANNEL_ID,
-                        "Krushna AI Voice",
-                        NotificationManager.IMPORTANCE_LOW);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel =
+                    new NotificationChannel(
+                            CHANNEL_ID,
+                            "Krushna AI Voice",
+                            NotificationManager.IMPORTANCE_LOW);
 
-        NotificationManager manager =
-                getSystemService(NotificationManager.class);
+            NotificationManager manager =
+                    getSystemService(NotificationManager.class);
 
-        if (manager != null) {
-            manager.createNotificationChannel(channel);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
         }
     }
 
@@ -274,4 +276,3 @@ public class HomeVoiceService extends Service {
         return null;
     }
 }
-
