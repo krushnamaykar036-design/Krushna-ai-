@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.*;
 
 import org.json.JSONObject;
@@ -40,30 +39,20 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-
         buildUI();
 
-        tts = new TextToSpeech(this, result -> {
-            if (result == TextToSpeech.SUCCESS) {
+        tts = new TextToSpeech(this, r -> {
+            if (r == TextToSpeech.SUCCESS)
                 tts.setLanguage(new Locale("mr", "IN"));
-            }
         });
 
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(
-                new String[]{Manifest.permission.RECORD_AUDIO}, MIC
-            );
-        }
+                != PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{
+                Manifest.permission.RECORD_AUDIO
+            }, MIC);
 
         status.setText("KRUSHNA AI ONLINE");
-    }
-
-    private GradientDrawable bg(int color, int radius) {
-        GradientDrawable d = new GradientDrawable();
-        d.setColor(color);
-        d.setCornerRadius(dp(radius));
-        return d;
     }
 
     private int dp(int n) {
@@ -71,89 +60,81 @@ public class MainActivity extends Activity {
             .getDisplayMetrics().density);
     }
 
-    private TextView text(String value, int size) {
+    private GradientDrawable bg(int c, int r) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(c);
+        d.setCornerRadius(dp(r));
+        d.setStroke(dp(1), Color.rgb(180, 0, 35));
+        return d;
+    }
+
+    private TextView text(String s, int size) {
         TextView t = new TextView(this);
-        t.setText(value);
-        t.setTextColor(Color.WHITE);
+        t.setText(s);
         t.setTextSize(size);
+        t.setTextColor(Color.WHITE);
         t.setGravity(Gravity.CENTER);
         return t;
     }
 
     private void buildUI() {
         LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setGravity(Gravity.CENTER);
+        root.setOrientation(1);
         root.setPadding(dp(18), dp(15), dp(18), dp(15));
-        root.setBackgroundColor(Color.rgb(10, 5, 8));
+        root.setBackgroundColor(Color.rgb(8, 4, 8));
 
         TextView title = text("🔥 KRUSHNA AI", 30);
         title.setTypeface(null, Typeface.BOLD);
         title.setTextColor(Color.RED);
-        root.addView(title, new LinearLayout.LayoutParams(-1, dp(65)));
+        root.addView(title, new LinearLayout.LayoutParams(-1, dp(60)));
 
-        TextView subtitle = text("RED DEVIL EDITION", 14);
-        subtitle.setTextColor(Color.LTGRAY);
-        root.addView(subtitle);
+        root.addView(text("RED DEVIL • PREMIUM AI", 13));
 
-        status = text("INITIALIZING...", 14);
+        status = text("ONLINE", 15);
         status.setTextColor(Color.RED);
-        root.addView(status,
-            new LinearLayout.LayoutParams(-1, dp(45)));
+        root.addView(status, new LinearLayout.LayoutParams(-1, dp(40)));
 
-        TextView micButton = text("🎙", 65);
-        micButton.setBackground(bg(Color.rgb(120, 0, 20), 100));
+        TextView mic = text("🦚", 65);
+        mic.setBackground(bg(Color.rgb(65, 0, 15), 100));
+
         LinearLayout.LayoutParams mp =
             new LinearLayout.LayoutParams(dp(155), dp(155));
         mp.gravity = Gravity.CENTER;
-        mp.setMargins(0, dp(18), 0, dp(18));
-        root.addView(micButton, mp);
+        mp.setMargins(0, dp(20), 0, dp(15));
+        root.addView(mic, mp);
 
-        micButton.setOnClickListener(v -> startVoice());
+        mic.setOnClickListener(v -> startVoice());
 
-        TextView hint = text("TAP TO SPEAK", 13);
-        hint.setTextColor(Color.LTGRAY);
-        root.addView(hint);
+        root.addView(text("TAP TO SPEAK • HEY KRUSHNA", 13));
 
         ScrollView scroll = new ScrollView(this);
-        chat = new TextView(this);
-        chat.setTextColor(Color.WHITE);
-        chat.setTextSize(16);
+        chat = text("", 16);
+        chat.setGravity(Gravity.TOP | Gravity.LEFT);
         chat.setPadding(dp(12), dp(12), dp(12), dp(12));
         scroll.addView(chat);
 
-        LinearLayout.LayoutParams sp =
-            new LinearLayout.LayoutParams(-1, 0, 1);
-        sp.setMargins(0, dp(12), 0, dp(12));
-        root.addView(scroll, sp);
+        root.addView(scroll,
+            new LinearLayout.LayoutParams(-1, 0, 1));
 
         input = new EditText(this);
         input.setSingleLine(true);
         input.setHint("Ask Krushna AI...");
-        input.setHintTextColor(Color.GRAY);
         input.setTextColor(Color.WHITE);
-        input.setPadding(dp(12), 0, dp(12), 0);
-        input.setBackground(bg(Color.rgb(35, 20, 25), 15));
-
-        root.addView(input,
-            new LinearLayout.LayoutParams(-1, dp(52)));
+        input.setHintTextColor(Color.GRAY);
+        input.setBackground(bg(Color.rgb(30, 15, 20), 15));
+        root.addView(input, new LinearLayout.LayoutParams(-1, dp(50)));
 
         Button send = new Button(this);
         send.setText("SEND MESSAGE");
         send.setTextColor(Color.WHITE);
         send.setBackgroundTintList(
-            android.content.res.ColorStateList.valueOf(
-                Color.rgb(180, 0, 30)));
-
-        root.addView(send,
-            new LinearLayout.LayoutParams(-1, dp(52)));
+            android.content.res.ColorStateList.valueOf(Color.RED));
+        root.addView(send, new LinearLayout.LayoutParams(-1, dp(50)));
 
         send.setOnClickListener(v -> {
             String q = input.getText().toString().trim();
-            if (!q.isEmpty()) {
-                input.setText("");
-                handleCommand(q);
-            }
+            input.setText("");
+            if (!q.isEmpty()) handleCommand(q);
         });
 
         setContentView(root);
@@ -162,59 +143,49 @@ public class MainActivity extends Activity {
     private void startVoice() {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(
-                new String[]{Manifest.permission.RECORD_AUDIO}, MIC);
+            requestPermissions(new String[]{
+                Manifest.permission.RECORD_AUDIO
+            }, MIC);
             return;
         }
 
         try {
-            Intent i = new Intent(
-                RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            i.putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+            Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            i.putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE,
-                "mr-IN");
-            i.putExtra(
-                RecognizerIntent.EXTRA_PROMPT,
-                "Speak to Krushna AI");
-
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "mr-IN");
+            i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Hey Krushna");
             status.setText("LISTENING...");
             startActivityForResult(i, VOICE);
         } catch (Exception e) {
-            reply("Voice input unavailable.");
+            reply("Voice unavailable");
         }
     }
 
     @Override
-    protected void onActivityResult(int request, int result, Intent data) {
-        super.onActivityResult(request, result, data);
+    protected void onActivityResult(int r, int c, Intent d) {
+        super.onActivityResult(r, c, d);
 
-        if (request == VOICE && result == RESULT_OK && data != null) {
-            ArrayList<String> list =
-                data.getStringArrayListExtra(
-                    RecognizerIntent.EXTRA_RESULTS);
-
-            if (list != null && !list.isEmpty()) {
-                handleCommand(list.get(0));
-            }
+        if (r == VOICE && c == RESULT_OK && d != null) {
+            ArrayList<String> a = d.getStringArrayListExtra(
+                RecognizerIntent.EXTRA_RESULTS);
+            if (a != null && !a.isEmpty())
+                handleCommand(a.get(0));
         }
         status.setText("KRUSHNA AI READY");
     }
 
     private void handleCommand(String command) {
         String q = command.toLowerCase(Locale.ROOT).trim();
-
         addChat("YOU: " + command);
 
         if (q.contains("youtube")) {
-            openUrl("https://www.youtube.com");
+            openUrl("https://youtube.com");
             return;
         }
 
         if (q.contains("google")) {
-            openUrl("https://www.google.com");
+            openUrl("https://google.com");
             return;
         }
 
@@ -234,26 +205,22 @@ public class MainActivity extends Activity {
         }
 
         if (q.contains("camera") || q.contains("कॅमेरा")) {
-            try {
-                startActivity(new Intent(
-                    android.provider.MediaStore.ACTION_IMAGE_CAPTURE));
-                reply("Opening camera.");
-            } catch (Exception e) {
-                reply("Camera unavailable.");
-            }
+            startActivity(new Intent(
+                android.provider.MediaStore.ACTION_IMAGE_CAPTURE));
+            reply("Camera opening");
             return;
         }
 
         if (q.contains("settings") || q.contains("सेटिंग")) {
             startActivity(new Intent(
                 android.provider.Settings.ACTION_SETTINGS));
-            reply("Opening settings.");
+            reply("Settings opening");
             return;
         }
 
         if (q.contains("call") || q.contains("कॉल")) {
             startActivity(new Intent(Intent.ACTION_DIAL));
-            reply("Opening phone dialer.");
+            reply("Phone dialer opening");
             return;
         }
 
@@ -268,22 +235,23 @@ public class MainActivity extends Activity {
     }
 
     private void openApp(String pkg, String name) {
-        Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
+        Intent i = getPackageManager()
+            .getLaunchIntentForPackage(pkg);
+
         if (i != null) {
             startActivity(i);
             reply("Opening " + name);
         } else {
-            reply(name + " is not installed.");
+            reply(name + " not installed");
         }
     }
 
     private void openUrl(String url) {
         try {
-            startActivity(new Intent(
-                Intent.ACTION_VIEW, Uri.parse(url)));
-            reply("Opening website.");
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            reply("Opening website");
         } catch (Exception e) {
-            reply("Could not open website.");
+            reply("Website unavailable");
         }
     }
 
@@ -292,100 +260,58 @@ public class MainActivity extends Activity {
 
         new Thread(() -> {
             HttpURLConnection c = null;
-
             try {
                 JSONObject body = new JSONObject();
                 body.put("message", message);
 
                 c = (HttpURLConnection)
                     new URL(SERVER).openConnection();
-
                 c.setRequestMethod("POST");
                 c.setConnectTimeout(20000);
                 c.setReadTimeout(30000);
                 c.setDoOutput(true);
-                c.setRequestProperty(
-                    "Content-Type", "application/json");
+                c.setRequestProperty("Content-Type", "application/json");
 
                 try (OutputStream os = c.getOutputStream()) {
                     os.write(body.toString().getBytes(
                         StandardCharsets.UTF_8));
                 }
 
-                int code = c.getResponseCode();
-                InputStream is = code >= 200 && code < 300
+                InputStream is = c.getResponseCode() < 300
                     ? c.getInputStream() : c.getErrorStream();
 
-                if (is == null) throw new Exception("HTTP " + code);
-
-                BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(is,
-                        StandardCharsets.UTF_8));
+                BufferedReader br = new BufferedReader(
+                    new InputStreamReader(is, StandardCharsets.UTF_8));
 
                 StringBuilder out = new StringBuilder();
                 String line;
-                while ((line = reader.readLine()) != null) {
+                while ((line = br.readLine()) != null)
                     out.append(line);
-                }
-                reader.close();
+                br.close();
 
-                JSONObject json = new JSONObject(out.toString());
-                String answer = json.optString("reply",
-                    json.optString("response",
-                    json.optString("message", out.toString())));
+                JSONObject j = new JSONObject(out.toString());
+                String answer = j.optString("reply",
+                    j.optString("response", "AI response unavailable"));
 
                 runOnUiThread(() -> reply(answer));
 
             } catch (Exception e) {
-                runOnUiThread(() ->
-                    reply("Server error. Please try again."));
+                runOnUiThread(() -> reply("Server error"));
             } finally {
                 if (c != null) c.disconnect();
             }
         }).start();
     }
 
-private void openInstalledApp(String command) {
-    String q = command.toLowerCase(Locale.ROOT);
-
-    android.content.pm.PackageManager pm =
-        getPackageManager();
-
-    java.util.List<android.content.pm.ApplicationInfo> apps =
-        pm.getInstalledApplications(
-            android.content.pm.PackageManager.GET_META_DATA);
-
-    for (android.content.pm.ApplicationInfo app : apps) {
-        String name = pm.getApplicationLabel(app)
-            .toString().toLowerCase(Locale.ROOT);
-
-        if (name.equals(q) || name.contains(q)) {
-            Intent launch = pm.getLaunchIntentForPackage(
-                app.packageName);
-
-            if (launch != null) {
-                startActivity(launch);
-                reply("Opening " +
-                    pm.getApplicationLabel(app));
-                return;
-            }
-        }
-    }
-
-    reply("App not found: " + command);
-}
-    
-    private void reply(String message) {
-        addChat("KRUSHNA: " + message);
-        if (tts != null) {
-            tts.speak(message, TextToSpeech.QUEUE_FLUSH,
-                null, "KRUSHNA");
-        }
+    private void reply(String s) {
+        addChat("KRUSHNA: " + s);
+        if (tts != null)
+            tts.speak(s, TextToSpeech.QUEUE_FLUSH, null, "KRUSHNA");
         status.setText("KRUSHNA AI READY");
     }
 
-    private void addChat(String message) {
-        chat.append(message + "\n\n");
+    private void addChat(String s) {
+        chat.append(s + "\n\n");
     }
 
     @Override
@@ -397,3 +323,4 @@ private void openInstalledApp(String command) {
         super.onDestroy();
     }
 }
+
