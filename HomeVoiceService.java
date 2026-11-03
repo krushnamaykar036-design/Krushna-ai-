@@ -1,4 +1,4 @@
-
+package com.example.aiassistant;
 package com.example.aiassistant;
 
 import android.app.Notification;
