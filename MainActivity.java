@@ -1,4 +1,3 @@
-
 package com.example.aiassistant;
 
 import android.Manifest;
@@ -32,6 +31,8 @@ public class MainActivity extends Activity {
     private TextView status, chat;
     private EditText input;
     private TextToSpeech tts;
+    private Button voiceToggle;
+    private boolean voiceActive = false;
 
     private static final String SERVER =
         "https://krushna-ai-he2j.onrender.com/chat";
@@ -52,12 +53,12 @@ public class MainActivity extends Activity {
                 Manifest.permission.RECORD_AUDIO
             }, MIC);
 
-if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
-        != PackageManager.PERMISSION_GRANTED) {
-    requestPermissions(
-        new String[]{Manifest.permission.READ_CONTACTS}, 1003);
-}
-        
+        if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{
+                Manifest.permission.READ_CONTACTS
+            }, 1003);
+
         status.setText("KRUSHNA AI ONLINE");
     }
 
@@ -99,6 +100,17 @@ if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
         status = text("ONLINE", 15);
         status.setTextColor(Color.RED);
         root.addView(status, new LinearLayout.LayoutParams(-1, dp(40)));
+
+        // Voice Assistant ON/OFF
+        voiceToggle = new Button(this);
+        voiceToggle.setText("🎙️ VOICE ASSISTANT OFF");
+        voiceToggle.setTextColor(Color.WHITE);
+        voiceToggle.setBackgroundTintList(
+            android.content.res.ColorStateList.valueOf(Color.RED));
+        root.addView(voiceToggle,
+            new LinearLayout.LayoutParams(-1, dp(50)));
+
+        voiceToggle.setOnClickListener(v -> toggleVoice());
 
         TextView mic = text("🦚", 65);
         mic.setBackground(bg(Color.rgb(65, 0, 15), 100));
@@ -146,6 +158,33 @@ if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
         setContentView(root);
     }
 
+    // Voice Assistant Start / Stop
+    private void toggleVoice() {
+        if (!voiceActive) {
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{
+                    Manifest.permission.RECORD_AUDIO
+                }, MIC);
+                return;
+            }
+
+            Intent service = new Intent(this, HomeVoiceService.class);
+            startForegroundService(service);
+
+            voiceActive = true;
+            voiceToggle.setText("🔴 VOICE ASSISTANT ON");
+            status.setText("VOICE ASSISTANT ACTIVE");
+            reply("Voice Assistant सुरू झाला");
+        } else {
+            stopService(new Intent(this, HomeVoiceService.class));
+            voiceActive = false;
+            voiceToggle.setText("🎙️ VOICE ASSISTANT OFF");
+            status.setText("KRUSHNA AI ONLINE");
+            reply("Voice Assistant बंद झाला");
+        }
+    }
+
     private void startVoice() {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -180,7 +219,8 @@ if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
         }
         status.setText("KRUSHNA AI READY");
     }
-private void handleCommand(String command) {
+
+    private void handleCommand(String command) {
         String q = command.toLowerCase(Locale.ROOT).trim();
         addChat("YOU: " + command);
 
@@ -237,8 +277,7 @@ private void handleCommand(String command) {
         }
 
         askServer(command);
-}
-    
+    }
 
     private void openApp(String pkg, String name) {
         Intent i = getPackageManager()
@@ -309,48 +348,48 @@ private void handleCommand(String command) {
         }).start();
     }
 
-private void callContact(String name) {
-    if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
-            != PackageManager.PERMISSION_GRANTED) {
-        requestPermissions(
-            new String[]{Manifest.permission.READ_CONTACTS}, 1003);
-        reply("Allow contacts permission first");
-        return;
-    }
-
-    android.database.Cursor cursor = getContentResolver().query(
-        android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-        new String[]{
-            android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-            android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
-        },
-        null, null, null);
-
-    if (cursor != null) {
-        while (cursor.moveToNext()) {
-            String contact = cursor.getString(0);
-            String number = cursor.getString(1);
-
-            if (contact != null &&
-                contact.toLowerCase(Locale.ROOT)
-                    .contains(name.toLowerCase(Locale.ROOT))) {
-
-                cursor.close();
-
-                Intent dial = new Intent(Intent.ACTION_DIAL);
-                dial.setData(Uri.parse("tel:" + number));
-                startActivity(dial);
-
-                reply("Dialer opening for " + contact);
-                return;
-            }
+    private void callContact(String name) {
+        if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                new String[]{Manifest.permission.READ_CONTACTS}, 1003);
+            reply("Allow contacts permission first");
+            return;
         }
-        cursor.close();
+
+        android.database.Cursor cursor = getContentResolver().query(
+            android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            new String[]{
+                android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
+            },
+            null, null, null);
+
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                String contact = cursor.getString(0);
+                String number = cursor.getString(1);
+
+                if (contact != null &&
+                    contact.toLowerCase(Locale.ROOT)
+                        .contains(name.toLowerCase(Locale.ROOT))) {
+
+                    cursor.close();
+
+                    Intent dial = new Intent(Intent.ACTION_DIAL);
+                    dial.setData(Uri.parse("tel:" + number));
+                    startActivity(dial);
+
+                    reply("Dialer opening for " + contact);
+                    return;
+                }
+            }
+            cursor.close();
+        }
+
+        reply("Contact not found: " + name);
     }
 
-    reply("Contact not found: " + name);
-}
-    
     private void reply(String s) {
         addChat("KRUSHNA: " + s);
         if (tts != null)
@@ -370,5 +409,5 @@ private void callContact(String name) {
         }
         super.onDestroy();
     }
-}
+                          }
 
