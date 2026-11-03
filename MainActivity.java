@@ -52,6 +52,12 @@ public class MainActivity extends Activity {
                 Manifest.permission.RECORD_AUDIO
             }, MIC);
 
+if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
+        != PackageManager.PERMISSION_GRANTED) {
+    requestPermissions(
+        new String[]{Manifest.permission.READ_CONTACTS}, 1003);
+}
+        
         status.setText("KRUSHNA AI ONLINE");
     }
 
@@ -303,6 +309,48 @@ private void handleCommand(String command) {
         }).start();
     }
 
+private void callContact(String name) {
+    if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
+            != PackageManager.PERMISSION_GRANTED) {
+        requestPermissions(
+            new String[]{Manifest.permission.READ_CONTACTS}, 1003);
+        reply("Allow contacts permission first");
+        return;
+    }
+
+    android.database.Cursor cursor = getContentResolver().query(
+        android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+        new String[]{
+            android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
+        },
+        null, null, null);
+
+    if (cursor != null) {
+        while (cursor.moveToNext()) {
+            String contact = cursor.getString(0);
+            String number = cursor.getString(1);
+
+            if (contact != null &&
+                contact.toLowerCase(Locale.ROOT)
+                    .contains(name.toLowerCase(Locale.ROOT))) {
+
+                cursor.close();
+
+                Intent dial = new Intent(Intent.ACTION_DIAL);
+                dial.setData(Uri.parse("tel:" + number));
+                startActivity(dial);
+
+                reply("Dialer opening for " + contact);
+                return;
+            }
+        }
+        cursor.close();
+    }
+
+    reply("Contact not found: " + name);
+}
+    
     private void reply(String s) {
         addChat("KRUSHNA: " + s);
         if (tts != null)
