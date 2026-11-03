@@ -345,6 +345,36 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+private void openInstalledApp(String command) {
+    String q = command.toLowerCase(Locale.ROOT);
+
+    android.content.pm.PackageManager pm =
+        getPackageManager();
+
+    java.util.List<android.content.pm.ApplicationInfo> apps =
+        pm.getInstalledApplications(
+            android.content.pm.PackageManager.GET_META_DATA);
+
+    for (android.content.pm.ApplicationInfo app : apps) {
+        String name = pm.getApplicationLabel(app)
+            .toString().toLowerCase(Locale.ROOT);
+
+        if (name.equals(q) || name.contains(q)) {
+            Intent launch = pm.getLaunchIntentForPackage(
+                app.packageName);
+
+            if (launch != null) {
+                startActivity(launch);
+                reply("Opening " +
+                    pm.getApplicationLabel(app));
+                return;
+            }
+        }
+    }
+
+    reply("App not found: " + command);
+}
+    
     private void reply(String message) {
         addChat("KRUSHNA: " + message);
         if (tts != null) {
