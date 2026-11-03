@@ -174,8 +174,7 @@ public class MainActivity extends Activity {
         }
         status.setText("KRUSHNA AI READY");
     }
-
-    private void handleCommand(String command) {
+private void handleCommand(String command) {
         String q = command.toLowerCase(Locale.ROOT).trim();
         addChat("YOU: " + command);
 
@@ -232,7 +231,8 @@ public class MainActivity extends Activity {
         }
 
         askServer(command);
-    }
+}
+    
 
     private void openApp(String pkg, String name) {
         Intent i = getPackageManager()
