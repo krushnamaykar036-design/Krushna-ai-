@@ -1,4 +1,3 @@
-
 package com.example.aiassistant;
 
 import android.app.Notification;
@@ -23,7 +22,6 @@ public class HomeVoiceService extends Service {
     private static final int NOTIFICATION_ID = 2001;
 
     private SpeechRecognizer recognizer;
-    private Intent recognizerIntent;
     private Handler handler;
     private boolean listening = false;
     private boolean destroyed = false;
@@ -47,7 +45,8 @@ public class HomeVoiceService extends Service {
             startForeground(
                     NOTIFICATION_ID,
                     notification,
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                    android.content.pm.ServiceInfo
+                            .FOREGROUND_SERVICE_TYPE_MICROPHONE
             );
         } else {
             startForeground(NOTIFICATION_ID, notification);
@@ -66,7 +65,6 @@ public class HomeVoiceService extends Service {
 
         if (recognizer != null) {
             recognizer.destroy();
-            recognizer = null;
         }
 
         recognizer = SpeechRecognizer.createSpeechRecognizer(this);
@@ -94,50 +92,33 @@ public class HomeVoiceService extends Service {
                 restartListening();
             }
 
-            @Override
-            public void onReadyForSpeech(Bundle b) {}
-
-            @Override
-            public void onBeginningOfSpeech() {}
-
-            @Override
-            public void onRmsChanged(float rms) {}
-
-            @Override
-            public void onBufferReceived(byte[] buffer) {}
-
-            @Override
-            public void onEndOfSpeech() {}
-
-            @Override
-            public void onPartialResults(Bundle b) {}
-
-            @Override
-            public void onEvent(int event, Bundle b) {}
+            @Override public void onReadyForSpeech(Bundle b) {}
+            @Override public void onBeginningOfSpeech() {}
+            @Override public void onRmsChanged(float rms) {}
+            @Override public void onBufferReceived(byte[] buffer) {}
+            @Override public void onEndOfSpeech() {}
+            @Override public void onPartialResults(Bundle b) {}
+            @Override public void onEvent(int event, Bundle b) {}
         });
 
-        recognizerIntent =
+        Intent intent =
                 new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 
-        recognizerIntent.putExtra(
+        intent.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
 
-        recognizerIntent.putExtra(
+        intent.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE,
                 "en-IN");
 
-        recognizerIntent.putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,
-                "en-IN");
-
-        recognizerIntent.putExtra(
+        intent.putExtra(
                 RecognizerIntent.EXTRA_PARTIAL_RESULTS,
                 false);
 
         try {
             listening = true;
-            recognizer.startListening(recognizerIntent);
+            recognizer.startListening(intent);
         } catch (Exception e) {
             listening = false;
             restartListening();
@@ -145,13 +126,13 @@ public class HomeVoiceService extends Service {
     }
 
     private void restartListening() {
-        if (destroyed) return;
+        if (destroyed || handler == null) return;
 
         handler.postDelayed(() -> {
             if (!destroyed && !listening) {
                 startListening();
             }
-        }, 1000);
+        }, 1500);
     }
 
     private void handleCommand(String command) {
@@ -159,10 +140,10 @@ public class HomeVoiceService extends Service {
 
         String text = command.toLowerCase(Locale.ROOT).trim();
 
-        if (text.contains("hey krushna") ||
-                text.contains("hey krishna") ||
-                text.contains("ok krushna") ||
-                text.contains("okay krushna")) {
+        if (text.contains("hey krushna")
+                || text.contains("hey krishna")
+                || text.contains("ok krushna")
+                || text.contains("okay krushna")) {
 
             String app = text
                     .replace("hey krushna", "")
@@ -197,9 +178,12 @@ public class HomeVoiceService extends Service {
 
     private void speak(String message) {
         Intent intent = new Intent(this, MainActivity.class);
+
         intent.putExtra("KRUSHNA_MESSAGE", message);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        intent.addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         try {
             startActivity(intent);
@@ -208,12 +192,13 @@ public class HomeVoiceService extends Service {
 
     private void openApp(String packageName) {
         try {
-            Intent i = getPackageManager()
-                    .getLaunchIntentForPackage(packageName);
+            Intent intent =
+                    getPackageManager()
+                            .getLaunchIntentForPackage(packageName);
 
-            if (i != null) {
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(i);
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
             } else {
                 speak("App not installed");
             }
@@ -222,24 +207,30 @@ public class HomeVoiceService extends Service {
 
     private void openCamera() {
         try {
-            Intent i = new Intent(
-                    android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(i);
+            Intent intent =
+                    new Intent(
+                            android.provider.MediaStore
+                                    .ACTION_IMAGE_CAPTURE);
+
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
         } catch (Exception ignored) {}
     }
 
     private void openSettings() {
         try {
-            Intent i = new Intent(
-                    android.provider.Settings.ACTION_SETTINGS);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(i);
+            Intent intent =
+                    new Intent(
+                            android.provider.Settings.ACTION_SETTINGS);
+
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
         } catch (Exception ignored) {}
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
             NotificationChannel channel =
                     new NotificationChannel(
                             CHANNEL_ID,
@@ -276,3 +267,4 @@ public class HomeVoiceService extends Service {
         return null;
     }
 }
+
