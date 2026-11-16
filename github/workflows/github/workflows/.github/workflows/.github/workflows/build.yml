@@ -30,3 +30,9 @@ jobs:
         with:
           name: Krishna-AI-Assistant-APK
           path: AI_Assistant_Basic/app/build/outputs/apk/debug/app-debug.apk
+      - name: Check Voice Service File
+        run: |
+          echo "Checking HomeVoiceService.java"
+          find . -name "HomeVoiceService.java"
+          echo "Checking MainActivity.java"
+          find . -name "MainActivity.java"
