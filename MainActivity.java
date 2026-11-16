@@ -1,413 +1,453 @@
+
 package com.example.aiassistant;
 
-import android.Manifest;
 import android.app.Activity;
+import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.*;
+import android.graphics.Color;
+import android.graphics.Typeface;
 
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
 
-    private static final int VOICE = 1001;
-    private static final int MIC = 1002;
-
-    private TextView status, chat;
-    private EditText input;
-    private TextToSpeech tts;
-    private Button voiceToggle;
-    private boolean voiceActive = false;
-
     private static final String SERVER =
-        "https://krushna-ai-he2j.onrender.com/chat";
+            "https://krushna-ai-he2j.onrender.com/chat";
+
+    private TextToSpeech tts;
+    private LinearLayout chatLayout;
+    private EditText input;
+    private Button voiceButton;
+    private boolean voiceOn = false;
+
+    private static final int MIC_REQUEST = 1001;
 
     @Override
-    protected void onCreate(Bundle b) {
-        super.onCreate(b);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
         buildUI();
 
-        tts = new TextToSpeech(this, r -> {
-            if (r == TextToSpeech.SUCCESS)
-                tts.setLanguage(new Locale("mr", "IN"));
+        tts = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int result = tts.setLanguage(new Locale("mr", "IN"));
+                if (result == TextToSpeech.LANG_MISSING_DATA ||
+                        result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts.setLanguage(new Locale("hi", "IN"));
+                }
+            }
         });
 
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED)
-            requestPermissions(new String[]{
-                Manifest.permission.RECORD_AUDIO
-            }, MIC);
-
-        if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED)
-            requestPermissions(new String[]{
-                Manifest.permission.READ_CONTACTS
-            }, 1003);
-
-        status.setText("KRUSHNA AI ONLINE");
-    }
-
-    private int dp(int n) {
-        return (int)(n * getResources()
-            .getDisplayMetrics().density);
-    }
-
-    private GradientDrawable bg(int c, int r) {
-        GradientDrawable d = new GradientDrawable();
-        d.setColor(c);
-        d.setCornerRadius(dp(r));
-        d.setStroke(dp(1), Color.rgb(180, 0, 35));
-        return d;
-    }
-
-    private TextView text(String s, int size) {
-        TextView t = new TextView(this);
-        t.setText(s);
-        t.setTextSize(size);
-        t.setTextColor(Color.WHITE);
-        t.setGravity(Gravity.CENTER);
-        return t;
+        checkMicPermission();
+        handleIncomingIntent(getIntent());
     }
 
     private void buildUI() {
+
         LinearLayout root = new LinearLayout(this);
-        root.setOrientation(1);
-        root.setPadding(dp(18), dp(15), dp(18), dp(15));
-        root.setBackgroundColor(Color.rgb(8, 4, 8));
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(Color.rgb(12, 12, 12));
+        root.setPadding(18, 18, 18, 18);
 
-        TextView title = text("🔥 KRUSHNA AI", 30);
-        title.setTypeface(null, Typeface.BOLD);
+        TextView title = new TextView(this);
+        title.setText("🔥 KRUSHNA AI");
         title.setTextColor(Color.RED);
-        root.addView(title, new LinearLayout.LayoutParams(-1, dp(60)));
+        title.setTextSize(27);
+        title.setTypeface(null, Typeface.BOLD);
+        title.setGravity(Gravity.CENTER);
+        root.addView(title);
 
-        root.addView(text("RED DEVIL • PREMIUM AI", 13));
+        TextView subtitle = new TextView(this);
+        subtitle.setText("RED DEVIL • PREMIUM AI");
+        subtitle.setTextColor(Color.WHITE);
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setPadding(0, 5, 0, 15);
+        root.addView(subtitle);
 
-        status = text("ONLINE", 15);
-        status.setTextColor(Color.RED);
-        root.addView(status, new LinearLayout.LayoutParams(-1, dp(40)));
+        voiceButton = new Button(this);
+        voiceButton.setText("🎙 VOICE ASSISTANT OFF");
+        root.addView(voiceButton);
 
-        // Voice Assistant ON/OFF
-        voiceToggle = new Button(this);
-        voiceToggle.setText("🎙️ VOICE ASSISTANT OFF");
-        voiceToggle.setTextColor(Color.WHITE);
-        voiceToggle.setBackgroundTintList(
-            android.content.res.ColorStateList.valueOf(Color.RED));
-        root.addView(voiceToggle,
-            new LinearLayout.LayoutParams(-1, dp(50)));
-
-        voiceToggle.setOnClickListener(v -> toggleVoice());
-
-        TextView mic = text("🦚", 65);
-        mic.setBackground(bg(Color.rgb(65, 0, 15), 100));
-
-        LinearLayout.LayoutParams mp =
-            new LinearLayout.LayoutParams(dp(155), dp(155));
-        mp.gravity = Gravity.CENTER;
-        mp.setMargins(0, dp(20), 0, dp(15));
-        root.addView(mic, mp);
-
-        mic.setOnClickListener(v -> startVoice());
-
-        root.addView(text("TAP TO SPEAK • HEY KRUSHNA", 13));
+        voiceButton.setOnClickListener(v -> toggleVoice());
 
         ScrollView scroll = new ScrollView(this);
-        chat = text("", 16);
-        chat.setGravity(Gravity.TOP | Gravity.LEFT);
-        chat.setPadding(dp(12), dp(12), dp(12), dp(12));
-        scroll.addView(chat);
 
-        root.addView(scroll,
-            new LinearLayout.LayoutParams(-1, 0, 1));
+        chatLayout = new LinearLayout(this);
+        chatLayout.setOrientation(LinearLayout.VERTICAL);
+        chatLayout.setPadding(5, 10, 5, 10);
+
+        scroll.addView(chatLayout);
+
+        root.addView(scroll, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+
+        LinearLayout bottom = new LinearLayout(this);
+        bottom.setOrientation(LinearLayout.HORIZONTAL);
 
         input = new EditText(this);
-        input.setSingleLine(true);
-        input.setHint("Ask Krushna AI...");
-        input.setTextColor(Color.WHITE);
+        input.setHint("Krushna AI ला विचारा...");
         input.setHintTextColor(Color.GRAY);
-        input.setBackground(bg(Color.rgb(30, 15, 20), 15));
-        root.addView(input, new LinearLayout.LayoutParams(-1, dp(50)));
+        input.setTextColor(Color.WHITE);
+        input.setSingleLine(false);
+        input.setBackgroundColor(Color.rgb(35, 35, 35));
+
+        bottom.addView(input, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        Button mic = new Button(this);
+        mic.setText("🎤");
+        bottom.addView(mic);
+
+        mic.setOnClickListener(v -> startMic());
 
         Button send = new Button(this);
-        send.setText("SEND MESSAGE");
-        send.setTextColor(Color.WHITE);
-        send.setBackgroundTintList(
-            android.content.res.ColorStateList.valueOf(Color.RED));
-        root.addView(send, new LinearLayout.LayoutParams(-1, dp(50)));
+        send.setText("SEND");
+        bottom.addView(send);
 
         send.setOnClickListener(v -> {
-            String q = input.getText().toString().trim();
-            input.setText("");
-            if (!q.isEmpty()) handleCommand(q);
+            String message = input.getText().toString().trim();
+            if (!message.isEmpty()) {
+                input.setText("");
+                processMessage(message);
+            }
         });
 
+        root.addView(bottom);
         setContentView(root);
     }
 
-    // Voice Assistant Start / Stop
-    private void toggleVoice() {
-        if (!voiceActive) {
-            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-                    != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{
-                    Manifest.permission.RECORD_AUDIO
-                }, MIC);
-                return;
+    private void addMessage(String name, String message, boolean user) {
+
+        TextView text = new TextView(this);
+        text.setText(name + ": " + message);
+        text.setTextColor(user ? Color.WHITE : Color.GREEN);
+        text.setTextSize(16);
+        text.setPadding(10, 10, 10, 10);
+
+        chatLayout.addView(text);
+    }
+
+    private void processMessage(String message) {
+
+        addMessage("You", message, true);
+
+        String cmd = message.toLowerCase(Locale.ROOT).trim();
+
+        if (cmd.equals("home") || cmd.equals("go home")) {
+            Intent home = new Intent(Intent.ACTION_MAIN);
+            home.addCategory(Intent.CATEGORY_HOME);
+            home.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(home);
+            return;
+        }
+
+        if (cmd.contains("call")) {
+            Intent dial = new Intent(Intent.ACTION_DIAL);
+            startActivity(dial);
+            speak("Calling साठी Dialer उघडला आहे.");
+            return;
+        }
+
+        if (cmd.contains("camera")) {
+            openApp("com.android.camera");
+            return;
+        }
+
+        if (cmd.contains("settings")) {
+            startActivity(new Intent(
+                    android.provider.Settings.ACTION_SETTINGS));
+            return;
+        }
+
+        if (cmd.contains("whatsapp")) {
+            openApp("com.whatsapp");
+            return;
+        }
+
+        if (cmd.contains("instagram")) {
+            openApp("com.instagram.android");
+            return;
+        }
+
+        if (cmd.contains("youtube")) {
+            openApp("com.google.android.youtube");
+            return;
+        }
+
+        if (cmd.contains("chrome")) {
+            openApp("com.android.chrome");
+            return;
+        }
+
+        if (cmd.contains("facebook")) {
+            openApp("com.facebook.katana");
+            return;
+        }
+
+        if (cmd.contains("telegram")) {
+            openApp("org.telegram.messenger");
+            return;
+        }
+
+        if (cmd.contains("maps")) {
+            openApp("com.google.android.apps.maps");
+            return;
+        }
+
+        askOnlineAI(message);
+    }
+
+    private void openApp(String packageName) {
+
+        try {
+
+            Intent launch = getPackageManager()
+                    .getLaunchIntentForPackage(packageName);
+
+            if (launch != null) {
+                startActivity(launch);
+            } else {
+                speak("हे App फोनमध्ये सापडले नाही.");
             }
 
-            Intent service = new Intent(this, HomeVoiceService.class);
-            startForegroundService(service);
-
-            voiceActive = true;
-            voiceToggle.setText("🔴 VOICE ASSISTANT ON");
-            status.setText("VOICE ASSISTANT ACTIVE");
-            reply("Voice Assistant सुरू झाला");
-        } else {
-            stopService(new Intent(this, HomeVoiceService.class));
-            voiceActive = false;
-            voiceToggle.setText("🎙️ VOICE ASSISTANT OFF");
-            status.setText("KRUSHNA AI ONLINE");
-            reply("Voice Assistant बंद झाला");
+        } catch (Exception e) {
+            speak("App उघडता आले नाही.");
         }
     }
 
-    private void startVoice() {
+    private void askOnlineAI(String message) {
+
+        addMessage("Krushna AI", "AI उत्तर तयार करत आहे...", false);
+
+        new Thread(() -> {
+
+            HttpURLConnection connection = null;
+
+            try {
+
+                URL url = new URL(SERVER);
+                connection = (HttpURLConnection) url.openConnection();
+
+                connection.setRequestMethod("POST");
+                connection.setConnectTimeout(30000);
+                connection.setReadTimeout(60000);
+                connection.setDoOutput(true);
+
+                connection.setRequestProperty(
+                        "Content-Type", "application/json");
+
+                JSONObject request = new JSONObject();
+                request.put("message", message);
+
+                OutputStream output = connection.getOutputStream();
+                output.write(request.toString().getBytes("UTF-8"));
+                output.close();
+
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(
+                                connection.getInputStream(), "UTF-8"));
+
+                StringBuilder response = new StringBuilder();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+
+                reader.close();
+
+                JSONObject json = new JSONObject(response.toString());
+
+                String reply = json.optString("reply",
+                        json.optString("response",
+                                "AI उत्तर मिळाले नाही."));
+
+                runOnUiThread(() -> {
+                    addMessage("Krushna AI", reply, false);
+                    speak(reply);
+                });
+
+            } catch (Exception e) {
+
+                runOnUiThread(() -> {
+                    addMessage("Krushna AI",
+                            "Server connection error. पुन्हा प्रयत्न करा.",
+                            false);
+                    speak("Internet किंवा AI Server connection error.");
+                });
+
+            } finally {
+
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+
+        }).start();
+    }
+
+    private void speak(String message) {
+
+        if (tts != null) {
+            tts.speak(message,
+                    TextToSpeech.QUEUE_FLUSH, null, "KRUSHNA_AI");
+        }
+    }
+
+    private void startMic() {
+
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{
-                Manifest.permission.RECORD_AUDIO
-            }, MIC);
+
+            requestPermissions(
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    MIC_REQUEST);
             return;
         }
 
         try {
-            Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "mr-IN");
-            i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Hey Krushna");
-            status.setText("LISTENING...");
-            startActivityForResult(i, VOICE);
+
+            Intent intent = new Intent(
+                    RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+
+            intent.putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+
+            intent.putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE,
+                    "mr-IN");
+
+            intent.putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,
+                    "mr-IN");
+
+            intent.putExtra(
+                    RecognizerIntent.EXTRA_PROMPT,
+                    "Krushna AI शी बोला");
+
+            startActivityForResult(intent, MIC_REQUEST);
+
         } catch (Exception e) {
-            reply("Voice unavailable");
+            speak("Voice recognition उपलब्ध नाही.");
         }
     }
 
     @Override
-    protected void onActivityResult(int r, int c, Intent d) {
-        super.onActivityResult(r, c, d);
+    protected void onActivityResult(
+            int requestCode, int resultCode, Intent data) {
 
-        if (r == VOICE && c == RESULT_OK && d != null) {
-            ArrayList<String> a = d.getStringArrayListExtra(
-                RecognizerIntent.EXTRA_RESULTS);
-            if (a != null && !a.isEmpty())
-                handleCommand(a.get(0));
-        }
-        status.setText("KRUSHNA AI READY");
-    }
+        super.onActivityResult(requestCode, resultCode, data);
 
-    private void handleCommand(String command) {
-        String q = command.toLowerCase(Locale.ROOT).trim();
-        addChat("YOU: " + command);
+        if (requestCode == MIC_REQUEST &&
+                resultCode == RESULT_OK && data != null) {
 
-        if (q.contains("youtube")) {
-            openUrl("https://youtube.com");
-            return;
-        }
+            ArrayList<String> results =
+                    data.getStringArrayListExtra(
+                            RecognizerIntent.EXTRA_RESULTS);
 
-        if (q.contains("google")) {
-            openUrl("https://google.com");
-            return;
-        }
-
-        if (q.contains("whatsapp")) {
-            openApp("com.whatsapp", "WhatsApp");
-            return;
-        }
-
-        if (q.contains("instagram")) {
-            openApp("com.instagram.android", "Instagram");
-            return;
-        }
-
-        if (q.contains("chrome")) {
-            openApp("com.android.chrome", "Chrome");
-            return;
-        }
-
-        if (q.contains("camera") || q.contains("कॅमेरा")) {
-            startActivity(new Intent(
-                android.provider.MediaStore.ACTION_IMAGE_CAPTURE));
-            reply("Camera opening");
-            return;
-        }
-
-        if (q.contains("settings") || q.contains("सेटिंग")) {
-            startActivity(new Intent(
-                android.provider.Settings.ACTION_SETTINGS));
-            reply("Settings opening");
-            return;
-        }
-
-        if (q.contains("call") || q.contains("कॉल")) {
-            startActivity(new Intent(Intent.ACTION_DIAL));
-            reply("Phone dialer opening");
-            return;
-        }
-
-        if (q.equals("home") || q.contains("होम")) {
-            Intent i = new Intent(Intent.ACTION_MAIN);
-            i.addCategory(Intent.CATEGORY_HOME);
-            startActivity(i);
-            return;
-        }
-
-        askServer(command);
-    }
-
-    private void openApp(String pkg, String name) {
-        Intent i = getPackageManager()
-            .getLaunchIntentForPackage(pkg);
-
-        if (i != null) {
-            startActivity(i);
-            reply("Opening " + name);
-        } else {
-            reply(name + " not installed");
-        }
-    }
-
-    private void openUrl(String url) {
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-            reply("Opening website");
-        } catch (Exception e) {
-            reply("Website unavailable");
-        }
-    }
-
-    private void askServer(String message) {
-        status.setText("THINKING...");
-
-        new Thread(() -> {
-            HttpURLConnection c = null;
-            try {
-                JSONObject body = new JSONObject();
-                body.put("message", message);
-
-                c = (HttpURLConnection)
-                    new URL(SERVER).openConnection();
-                c.setRequestMethod("POST");
-                c.setConnectTimeout(20000);
-                c.setReadTimeout(30000);
-                c.setDoOutput(true);
-                c.setRequestProperty("Content-Type", "application/json");
-
-                try (OutputStream os = c.getOutputStream()) {
-                    os.write(body.toString().getBytes(
-                        StandardCharsets.UTF_8));
-                }
-
-                InputStream is = c.getResponseCode() < 300
-                    ? c.getInputStream() : c.getErrorStream();
-
-                BufferedReader br = new BufferedReader(
-                    new InputStreamReader(is, StandardCharsets.UTF_8));
-
-                StringBuilder out = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null)
-                    out.append(line);
-                br.close();
-
-                JSONObject j = new JSONObject(out.toString());
-                String answer = j.optString("reply",
-                    j.optString("response", "AI response unavailable"));
-
-                runOnUiThread(() -> reply(answer));
-
-            } catch (Exception e) {
-                runOnUiThread(() -> reply("Server error"));
-            } finally {
-                if (c != null) c.disconnect();
+            if (results != null && !results.isEmpty()) {
+                processMessage(results.get(0));
             }
-        }).start();
+        }
     }
 
-    private void callContact(String name) {
-        if (checkSelfPermission(Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED) {
+    private void checkMicPermission() {
+
+        if (Build.VERSION.SDK_INT >= 23 &&
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+
             requestPermissions(
-                new String[]{Manifest.permission.READ_CONTACTS}, 1003);
-            reply("Allow contacts permission first");
-            return;
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    MIC_REQUEST);
         }
+    }
 
-        android.database.Cursor cursor = getContentResolver().query(
-            android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-            new String[]{
-                android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
-            },
-            null, null, null);
+    private Intent voiceServiceIntent() {
 
-        if (cursor != null) {
-            while (cursor.moveToNext()) {
-                String contact = cursor.getString(0);
-                String number = cursor.getString(1);
+        return new Intent().setClassName(
+                this,
+                "com.example.aiassistant.HomeVoiceService");
+    }
 
-                if (contact != null &&
-                    contact.toLowerCase(Locale.ROOT)
-                        .contains(name.toLowerCase(Locale.ROOT))) {
+    private void toggleVoice() {
 
-                    cursor.close();
+        try {
 
-                    Intent dial = new Intent(Intent.ACTION_DIAL);
-                    dial.setData(Uri.parse("tel:" + number));
-                    startActivity(dial);
+            if (!voiceOn) {
 
-                    reply("Dialer opening for " + contact);
-                    return;
+                if (Build.VERSION.SDK_INT >= 26) {
+                    startForegroundService(voiceServiceIntent());
+                } else {
+                    startService(voiceServiceIntent());
                 }
+
+                voiceOn = true;
+                voiceButton.setText("🔴 VOICE ASSISTANT ON");
+                speak("Krushna AI Voice Assistant सुरू झाला.");
+
+            } else {
+
+                stopService(voiceServiceIntent());
+
+                voiceOn = false;
+                voiceButton.setText("🎙 VOICE ASSISTANT OFF");
+                speak("Voice Assistant बंद झाला.");
             }
-            cursor.close();
+
+        } catch (Exception e) {
+            speak("Voice Assistant सुरू झाला नाही.");
         }
-
-        reply("Contact not found: " + name);
     }
 
-    private void reply(String s) {
-        addChat("KRUSHNA: " + s);
-        if (tts != null)
-            tts.speak(s, TextToSpeech.QUEUE_FLUSH, null, "KRUSHNA");
-        status.setText("KRUSHNA AI READY");
+    private void handleIncomingIntent(Intent intent) {
+
+        if (intent != null &&
+                intent.hasExtra("KRUSHNA_MESSAGE")) {
+
+            String message = intent.getStringExtra("KRUSHNA_MESSAGE");
+
+            if (message != null && !message.isEmpty()) {
+                processMessage(message);
+            }
+        }
     }
 
-    private void addChat(String s) {
-        chat.append(s + "\n\n");
+    @Override
+    protected void onNewIntent(Intent intent) {
+
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIncomingIntent(intent);
     }
 
     @Override
     protected void onDestroy() {
+
         if (tts != null) {
             tts.stop();
             tts.shutdown();
         }
+
         super.onDestroy();
     }
-                          }
+}
 
