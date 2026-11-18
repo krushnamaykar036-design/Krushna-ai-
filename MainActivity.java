@@ -230,41 +230,53 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             speak("App उघडता आले नाही.");
         }
-    }
+    } 
+    
+private void askOnlineAI(String message) {
 
-    private void askOnlineAI(String message) {
+    addMessage("Krushna AI", "AI उत्तर तयार करत आहे...", false);
 
-        addMessage("Krushna AI", "AI उत्तर तयार करत आहे...", false);
+    new Thread(() -> {
 
-        new Thread(() -> {
+        HttpURLConnection connection = null;
 
-            HttpURLConnection connection = null;
+        try {
+            URL url = new URL(
+                    "https://krushna-ai-he2j.onrender.com/chat");
 
-            try {
+            connection = (HttpURLConnection) url.openConnection();
 
-                URL url = new URL(SERVER);
-                connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setConnectTimeout(30000);
+            connection.setReadTimeout(60000);
+            connection.setDoOutput(true);
 
-                connection.setRequestMethod("POST");
-                connection.setConnectTimeout(30000);
-                connection.setReadTimeout(60000);
-                connection.setDoOutput(true);
+            connection.setRequestProperty(
+                    "Content-Type", "application/json; charset=UTF-8");
 
-                connection.setRequestProperty(
-                        "Content-Type", "application/json");
+            JSONObject request = new JSONObject();
+            request.put("message", message);
 
-                JSONObject request = new JSONObject();
-                request.put("message", message);
+            OutputStream output = connection.getOutputStream();
+            output.write(request.toString().getBytes("UTF-8"));
+            output.close();
 
-                OutputStream output = connection.getOutputStream();
-                output.write(request.toString().getBytes("UTF-8"));
-                output.close();
+            int status = connection.getResponseCode();
 
+            java.io.InputStream stream;
+
+            if (status >= 200 && status < 300) {
+                stream = connection.getInputStream();
+            } else {
+                stream = connection.getErrorStream();
+            }
+
+            StringBuilder response = new StringBuilder();
+
+            if (stream != null) {
                 BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(
-                                connection.getInputStream(), "UTF-8"));
+                        new InputStreamReader(stream, "UTF-8"));
 
-                StringBuilder response = new StringBuilder();
                 String line;
 
                 while ((line = reader.readLine()) != null) {
@@ -272,36 +284,57 @@ public class MainActivity extends Activity {
                 }
 
                 reader.close();
-
-                JSONObject json = new JSONObject(response.toString());
-
-                String reply = json.optString("reply",
-                        json.optString("response",
-                                "AI उत्तर मिळाले नाही."));
-
-                runOnUiThread(() -> {
-                    addMessage("Krushna AI", reply, false);
-                    speak(reply);
-                });
-
-            } catch (Exception e) {
-
-                runOnUiThread(() -> {
-                    addMessage("Krushna AI",
-                            "Server connection error. पुन्हा प्रयत्न करा.",
-                            false);
-                    speak("Internet किंवा AI Server connection error.");
-                });
-
-            } finally {
-
-                if (connection != null) {
-                    connection.disconnect();
-                }
             }
 
-        }).start();
-    }
+            String result = response.toString();
+
+            if (status >= 200 && status < 300) {
+
+                JSONObject json = new JSONObject(result);
+
+                String reply = json.optString("reply",
+                        json.optString("response", ""));
+
+                if (reply.isEmpty()) {
+                    reply = "Server कडून उत्तर मिळाले नाही: " + result;
+                }
+
+                final String finalReply = reply;
+
+                runOnUiThread(() -> {
+                    addMessage("Krushna AI", finalReply, false);
+                    speak(finalReply);
+                });
+
+            } else {
+
+                final String error =
+                        "HTTP Error " + status + ": " + result;
+
+                runOnUiThread(() ->
+                        addMessage("Server Error", error, false));
+            }
+
+        } catch (Exception e) {
+
+            final String error = e.getClass().getSimpleName()
+                    + ": " + e.getMessage();
+
+            runOnUiThread(() ->
+                    addMessage("Connection Error", error, false));
+
+        } finally {
+
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+
+    }).start();
+}
+    
+
+        
 
     private void speak(String message) {
 
